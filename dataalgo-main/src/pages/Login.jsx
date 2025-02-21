@@ -1,26 +1,72 @@
-import { Link } from "react-router-dom";
-import "../assets/styles/signup.css";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Alert } from 'antd';
+import LoginStyle from "../assets/styles/login.module.css";
+import FormStyle from "../assets/styles/form.module.css";
+import Cookies from 'js-cookie';
 
 const Login = () => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [alert, setAlert] = useState({ type: '', message: '' });
+  const [alertVisible, setAlertVisible] = useState(false);
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const usertoken = Math.floor(Math.random() * 100000000000);
+      const response = await fetch('http://localhost:5000/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ usertoken, username, password }),
+      });
+      if (response.ok) {
+        Cookies.set('user_token', usertoken, { 
+          expires: 7, 
+          secure: true, 
+          sameSite: 'Strict' 
+        });
+        navigate('/');
+      } else if(response.status === 401) {
+        setAlert({ type: 'error', message: 'Invalid credentials. Please try again.' });
+      }else{
+        setAlert({ type: 'error', message: 'Server error. Please try again later.' });
+      }
+      setAlertVisible(true);
+      setTimeout(() => {
+        setAlertVisible(false);
+      }, 3000);
+    } catch (error) {
+      console.error('Error:', error);
+      setAlert({ type: 'error', message: 'Server error. Please try again later.' });
+      setAlertVisible(true);
+      setTimeout(() => {
+        setAlertVisible(false);
+      }, 3000);
+    }
+  };
+
   return (
     <>
-      <header className="header">
-        <div className="logo">EduHub</div>
-        <nav className="nav">
-          <Link to="/login" className="btn login active">
-            Login
-          </Link>
-          <Link to="/signup" className="btn signup">
-            Sign Up
-          </Link>
-        </nav>
-      </header>
-
-      <main className="content">
-        <section className="form-container">
+      <div className={`${LoginStyle.Alert} ${alertVisible ? LoginStyle.AlertVisible : LoginStyle.AlertHidden}`}>
+        {alert.message && (
+          <Alert
+            message={alert.message}
+            type={alert.type}
+            showIcon
+            onClose={() => setAlert({ type: '', message: '' })}
+          />
+        )}
+      </div>
+      <main className={LoginStyle.Wrapper}>
+        <h2>Eduhub</h2>
+        <section className={FormStyle.FormContainer}>
           <h2>Login</h2>
-          <form action="/login" method="POST" className="login-form">
-            <div className="form-group">
+          <form onSubmit={handleSubmit}>
+            <div className={FormStyle.FormGroup}>
               <label htmlFor="username">Username or Email</label>
               <input
                 type="text"
@@ -28,9 +74,11 @@ const Login = () => {
                 name="username"
                 required
                 placeholder="Enter your username or email"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
               />
             </div>
-            <div className="form-group">
+            <div className={FormStyle.FormGroup}>
               <label htmlFor="password">Password</label>
               <input
                 type="password"
@@ -38,21 +86,22 @@ const Login = () => {
                 name="password"
                 required
                 placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
-            <button type="submit" className="btn submit-btn">
+            <button type="submit" className={FormStyle.SubmitBtn}>
               Login
             </button>
           </form>
-          <p className="form-footer">
+          <p className={FormStyle.FormFooter}>
             Don&apos;t have an account? <Link to="/signup">Sign up here</Link>.
           </p>
         </section>
+        <footer className={LoginStyle.Footer}>
+            <p><Link to="/">EduHub</Link> &copy; 2024. All rights reserved.</p>
+        </footer>
       </main>
-
-      <footer className="footer">
-        <p>EduHub &copy; 2024. All rights reserved.</p>
-      </footer>
     </>
   );
 };

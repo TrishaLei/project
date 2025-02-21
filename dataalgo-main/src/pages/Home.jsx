@@ -7,27 +7,6 @@ import "../assets/styles/home.css";
 const Home = () => {
   return (
     <>
-      <header className="header">
-        <div className="logo">EduHub</div>
-
-        <label htmlFor="nav-toggle" className="nav-toggle-label">
-          <span></span>
-          <span></span>
-          <span></span>
-        </label>
-
-        <input type="checkbox" id="nav-toggle" className="nav-toggle" />
-
-        <nav className="nav">
-          <Link to="/login" className="btn login">
-            Login
-          </Link>
-          <Link to="/signup" className="btn signup">
-            Sign Up
-          </Link>
-        </nav>
-      </header>
-
       <main className="content">
         <section className="hero">
           <h1>Welcome to EduHub!</h1>
@@ -113,10 +92,6 @@ const Home = () => {
           </div>
         </section>
       </main>
-
-      <footer className="footer">
-        <p>EduHub &copy; 2024. All rights reserved.</p>
-      </footer>
     </>
   );
 };
