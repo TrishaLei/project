@@ -1,13 +1,48 @@
-import { Link } from "react-router-dom";
+import { useState, useEffect } from 'react';
 import UserIcon from "../assets/images/user.svg";
 import UpArrow from "../assets/images/arrow-big-up.svg";
 import DownArrow from "../assets/images/arrow-big-down.svg";
 import "../assets/styles/home.css";
+import Cookies from 'js-cookie';
 
 const Home = () => {
+  const [posts, setPosts] = useState([]);
+  const [LoggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    fetch('http://localhost:5000/posts')
+      .then(async response => {
+        try {
+          const data = await response.json();
+          console.log(data);
+          setPosts(data);
+        } catch (error) {
+          console.error('Error fetching posts :', error);
+        }
+      }).catch(error => {
+        console.error('Error:', error);
+      });
+      Cookies.get('token') ? setLoggedIn(false) : setLoggedIn(true);
+    const ws = new WebSocket('ws://localhost:5000/');
+    ws.onmessage = (event) => {
+      const newPost = JSON.parse(event.data);
+      setPosts(prevPosts => [newPost, ...prevPosts]);
+    };
+
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, []);
+
   return (
     <>
       <main className="content">
+      {LoggedIn ? (
+        <>
         <section className="hero">
           <h1>Welcome to EduHub!</h1>
           <p>
@@ -15,8 +50,47 @@ const Home = () => {
             resources.
           </p>
         </section>
+        </>
+      ) : (
+        <div className="hero">
+        </div>
+      )}
+
 
         <section className="posts">
+          {posts.map(post => (
+            console.log(post.member_count),
+
+          <div key={post.id} className={`post ${post.isPaidContent ? 'premium' : ''}`}>
+            <h2 className="post-title">{post.title}</h2>
+            <p className="post-tags">Tags: {post.tags}</p>
+            <p className="post-author">
+              Posted by
+              <span className="icon">
+                <img src={UserIcon} alt="User" />
+              </span>
+              <span>{post.username}</span>
+            </p>
+            {post.isPaidContent ? (
+              <>
+                <p className="post-price">$5.99</p>
+                <div className="post-actions">  
+                  <button className="btn buy">Buy Now</button>
+                </div>
+              </>
+              ) : (
+              <div className="post-actions">
+                <button className="btn btn-vote">
+                  <img src={UpArrow} alt="Upvote" />
+                </button>
+                <button className="btn btn-vote">
+                  <img src={DownArrow} alt="Downvote" />
+                </button>
+              </div>
+              )}
+            </div>
+          ))}
+
           <div className="post">
             <h2 className="post-title">Introduction to Python Programming</h2>
             <p className="post-tags">Tags: Python, Programming, Beginners</p>
@@ -34,7 +108,7 @@ const Home = () => {
               <button className="btn btn-vote">
                 <img src={DownArrow} alt="Downvote" />
               </button>
-            </div>
+            </div> 
           </div>
 
           <div className="post premium">
@@ -92,6 +166,8 @@ const Home = () => {
           </div>
         </section>
       </main>
+
+      
     </>
   );
 };

@@ -68,7 +68,7 @@ const Signup = () => {
       </div>
       <main className={SignupStyle.Wrapper}>
         <h2>Eduhub</h2>
-        <section className={FormStyle.FormContainer}>
+        <section className={FormStyle.LoginSignupFormContainer}>
           <h2>Sign up</h2>
           <form onSubmit={handleSubmit}>
             <div className={FormStyle.FormGroup}>

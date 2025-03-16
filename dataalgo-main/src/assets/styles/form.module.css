@@ -1,4 +1,5 @@
-.FormContainer {
+
+.LoginSignupFormContainer {
     background: #fff;
     padding: 30px;
     margin: 20px auto;
@@ -9,9 +10,20 @@
     text-align: center;
 }
 
-.FormContainer h2 {
+.LoginSignupFormContainer h2 {
     margin-bottom: 20px;
     color: #333;
+}
+
+.PostFormContainer {
+    background: #fff;
+    padding: 30px;
+    margin: 20px auto;
+    border-radius: 5px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    max-width: 800px;
+    width: 600px;
+    text-align: center;
 }
 
 .FormGroup {
@@ -32,9 +44,22 @@
     border-radius: 4px;
 }
 
+.FormGroup textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
 .FormGroup input:focus {
     border-color: #4CAF50;
     outline: none;
+}
+
+.CheckBox{
+    display: flex !important;
+    align-items: center !important;
+    gap: 1px !important;
 }
 
 .SubmitBtn {

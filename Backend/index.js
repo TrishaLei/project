@@ -36,20 +36,18 @@ app.post('/login', (req, res) => {
       return;
     }
     if (results.length > 0) {
+      console.log(results);
         const query = 'UPDATE users SET token = ? WHERE username = ? AND password = ?';
         db.query(query, [usertoken, username, password], (err, results) => {
           if (err) {
             res.status(500).send('Server error');
             return;
-          }
-          if (results.length > 0) {
-            res.status(200).send('Login successful');
-          } else {
-            res.status(401).send('Invalid credentials');
+          }else{
+            res.status(200).send('Login successfuls');
           }
         });
     } else {
-      res.status(401).send('Invalid credentials');
+      res.status(401).send('Invalid credentials2');
     }
   });
 });
@@ -78,6 +76,39 @@ app.post('/signup', (req, res) => {
   });
 });
 
+app.post('/publish', (req, res) => {
+  const { usertoken, username, title, tags, description, isPaid } = req.body;
+  const checkUserQuery = 'SELECT * FROM users WHERE token = ? AND username = ?';
+  db.query(checkUserQuery, [usertoken, username], (err, results) => {
+    if (err) {
+      console.error('Error:', err);
+      return res.status(500).json({ message: 'Server error. Please try again later.' });
+    }
+    if (results.length > 0) {
+      const userId = results[0].id;
+      const insertUserQuery = 'INSERT INTO posts (userid, title, tags, description, isPaidContent) VALUES (?, ?, ?, ?, ?)';
+      db.query(insertUserQuery, [userId, title, tags, description, isPaid], (err, results) => {
+        if (err) {
+          console.error('Error:', err);
+          return res.status(500).json({ message: 'Server error. Please try again later.' });
+        }else{
+          res.status(200).send('Post published');
+        }
+      });
+    }
+  });
+});
+
+app.get('/posts', (req, res) => {
+  const getPostsQuery = `SELECT posts.title,posts.tags,posts.description,posts.attachment,posts.upvote,posts.downvote,posts.hasAttachment,posts.isPaidContent, users.username, users.avatar FROM posts JOIN users ON posts.userid = users.id ORDER BY posts.id DESC`;
+  db.query(getPostsQuery, (err, results) => {
+    if (err) {
+      console.error('Error:', err);
+      return res.status(500).json({ message: 'Server error. Please try again later.' });
+    }
+    res.status(200).json(results);
+  });
+});
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });

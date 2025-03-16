@@ -24,7 +24,12 @@ const Login = () => {
         body: JSON.stringify({ usertoken, username, password }),
       });
       if (response.ok) {
-        Cookies.set('user_token', usertoken, { 
+        Cookies.set('username', username, { 
+          expires: 7, 
+          secure: true, 
+          sameSite: 'Strict' 
+        });
+        Cookies.set('token', usertoken, { 
           expires: 7, 
           secure: true, 
           sameSite: 'Strict' 
@@ -63,7 +68,7 @@ const Login = () => {
       </div>
       <main className={LoginStyle.Wrapper}>
         <h2>Eduhub</h2>
-        <section className={FormStyle.FormContainer}>
+        <section className={FormStyle.LoginSignupFormContainer}>
           <h2>Login</h2>
           <form onSubmit={handleSubmit}>
             <div className={FormStyle.FormGroup}>
