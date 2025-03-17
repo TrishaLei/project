@@ -10,6 +10,9 @@ const Post = () => {
   const [tags, setTags] = useState('');
   const [description, setDescription] = useState('');
   const [isPaid, setIsPaid] = useState(false);
+  const [contentType, setContentType] = useState(0);
+  const [showPriceInput, setShowPriceInput] = useState(false);
+  const [price, setPrice] = useState(0.0);
   const [alert, setAlert] = useState({ type: '', message: '' });
   const [alertVisible, setAlertVisible] = useState(false);
   const navigate = useNavigate();
@@ -17,6 +20,18 @@ const Post = () => {
 
   const handlePaidChange = () => {
     setIsPaid(!isPaid);
+    setShowPriceInput(false);
+    setContentType(0);
+  };
+
+  const handleSubscriptionClick = () => {
+    setShowPriceInput(false);
+    setContentType(1);
+  };
+
+  const handlePriceBaseClick = () => {
+    setShowPriceInput(true);
+    setContentType(2);
   };
 
   const handleSubmit = async (e) => {
@@ -29,7 +44,7 @@ const Post = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ usertoken, username, title, tags, description, isPaid }),
+        body: JSON.stringify({ usertoken, username, title, tags, description, contentType, price }),
       });
       if (response.ok) {
         setAlert({ type: 'success', message: 'Successfuly published' });
@@ -128,7 +143,7 @@ const Post = () => {
 
             <div className={FormStyle.FormGroup}>
               <div className={FormStyle.CheckBox}>
-                <label htmlFor="isPaid">Paid Content</label>
+                <p htmlFor="isPaid">Paid Content</p>
                 <input
                   type="checkbox"
                   id="isPaid"
@@ -138,14 +153,30 @@ const Post = () => {
               </div>
             </div>
 
-            <div>
-              <button type="button" className={FormStyle.SubmitBtn}>
-                Subscription
-              </button>
-              <button type="button" className={FormStyle.SubmitBtn}>
-                Price base
-              </button>
-            </div>
+            {isPaid && (
+              <div className={FormStyle.SubPriceButton}>
+                <button type="button" onClick={handleSubscriptionClick}>
+                  Subscription
+                </button>
+                <button type="button" onClick={handlePriceBaseClick}>
+                  Price base
+                </button>
+              </div>
+            )}
+
+            {showPriceInput && (
+              <div className={FormStyle.FormGroup}>
+                <label htmlFor="price">Price</label>
+                <input
+                  type="number"
+                  id="price"
+                  name="price"
+                  placeholder="Enter price"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                />
+              </div>
+            )}
 
             <button type="submit" className={FormStyle.SubmitBtn}>
               Publish

@@ -56,12 +56,6 @@
     outline: none;
 }
 
-.CheckBox{
-    display: flex !important;
-    align-items: center !important;
-    gap: 1px !important;
-}
-
 .SubmitBtn {
     width: 100%;
     background-color: #4CAF50;
@@ -90,4 +84,32 @@
 
 .FormFooter a:hover {
     color: #3b823d;
+}
+
+.SubPriceButton {
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.SubPriceButton button {
+    width: 100%;
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    font-size: 1em;
+    cursor: pointer;
+}
+
+.SubPriceButton button:hover {
+    background-color: #45a049;
+}
+
+.SubPriceButton button:active,
+.SubPriceButton button:focus {
+    background-color: #3e8e41;
+    transform: scale(0.98);
 }

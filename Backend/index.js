@@ -36,7 +36,6 @@ app.post('/login', (req, res) => {
       return;
     }
     if (results.length > 0) {
-      console.log(results);
         const query = 'UPDATE users SET token = ? WHERE username = ? AND password = ?';
         db.query(query, [usertoken, username, password], (err, results) => {
           if (err) {
@@ -77,7 +76,7 @@ app.post('/signup', (req, res) => {
 });
 
 app.post('/publish', (req, res) => {
-  const { usertoken, username, title, tags, description, isPaid } = req.body;
+  const { usertoken, username, title, tags, description, contentType, price } = req.body;
   const checkUserQuery = 'SELECT * FROM users WHERE token = ? AND username = ?';
   db.query(checkUserQuery, [usertoken, username], (err, results) => {
     if (err) {
@@ -86,8 +85,8 @@ app.post('/publish', (req, res) => {
     }
     if (results.length > 0) {
       const userId = results[0].id;
-      const insertUserQuery = 'INSERT INTO posts (userid, title, tags, description, isPaidContent) VALUES (?, ?, ?, ?, ?)';
-      db.query(insertUserQuery, [userId, title, tags, description, isPaid], (err, results) => {
+      const insertUserQuery = 'INSERT INTO posts (userid, title, tags, description, contentType, price) VALUES (?, ?, ?, ?, ?, ?)';
+      db.query(insertUserQuery, [userId, title, tags, description, contentType, price], (err, results) => {
         if (err) {
           console.error('Error:', err);
           return res.status(500).json({ message: 'Server error. Please try again later.' });
@@ -100,7 +99,7 @@ app.post('/publish', (req, res) => {
 });
 
 app.get('/posts', (req, res) => {
-  const getPostsQuery = `SELECT posts.title,posts.tags,posts.description,posts.attachment,posts.upvote,posts.downvote,posts.hasAttachment,posts.isPaidContent, users.username, users.avatar FROM posts JOIN users ON posts.userid = users.id ORDER BY posts.id DESC`;
+  const getPostsQuery = `SELECT posts.title,posts.tags,posts.description,posts.attachment,posts.upvote,posts.downvote,posts.hasAttachment,posts.contentType, posts.price, users.username, users.avatar FROM posts JOIN users ON posts.userid = users.id ORDER BY posts.id DESC`;
   db.query(getPostsQuery, (err, results) => {
     if (err) {
       console.error('Error:', err);
@@ -109,6 +108,17 @@ app.get('/posts', (req, res) => {
     res.status(200).json(results);
   });
 });
+
+app.get('/avatar/:id', (req, res) => {
+  const { id } = req.params;
+  const filePath = __dirname + `/public/avatar/${id}.png`;
+  res.sendFile(filePath, err => {
+    if (err) {
+      res.status(404).send('Image not found');
+    }
+  });
+});
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
