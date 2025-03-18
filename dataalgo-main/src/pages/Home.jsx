@@ -3,7 +3,7 @@ import UserIcon from "../assets/images/user.svg";
 import UpArrow from "../assets/images/arrow-big-up.svg";
 import DownArrow from "../assets/images/arrow-big-down.svg";
 import "../assets/styles/home.css";
-import Cookies from 'js-cookie';
+import { GetCookie } from '../components/auth/cookies.jsx';
 
 const Home = () => {
   const [posts, setPosts] = useState([]);
@@ -18,7 +18,6 @@ const Home = () => {
       .then(async response => {
         try {
           const data = await response.json();
-          console.log(data);
           setPosts(data);
         } catch (error) {
           console.error('Error fetching posts :', error);
@@ -27,7 +26,7 @@ const Home = () => {
         console.error('Error:', error);
       });
 
-    Cookies.get('token') ? setLoggedIn(false) : setLoggedIn(true);
+    GetCookie('data') ? setLoggedIn(false) : setLoggedIn(true);
 
     const ws = new WebSocket('ws://localhost:5000/');
     ws.onmessage = (event) => {

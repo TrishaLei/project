@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Alert } from 'antd';
 import PostStyle from "../assets/styles/post.module.css";
 import FormStyle from "../assets/styles/form.module.css";
-import Cookies from 'js-cookie';
+import { GetCookie } from '../components/auth/cookies.jsx';
 
 const Post = () => {
   const [title, setTitle] = useState('');
@@ -17,6 +17,12 @@ const Post = () => {
   const [alertVisible, setAlertVisible] = useState(false);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const userData = GetCookie('data');
+    if (!userData) {
+      navigate('/');
+    }
+  }, [navigate]);
 
   const handlePaidChange = () => {
     setIsPaid(!isPaid);
@@ -36,8 +42,13 @@ const Post = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const username = Cookies.get('username');
-    const usertoken = Cookies.get('token');
+    const userData = GetCookie('data');
+    if (!userData) {
+      navigate('/');
+      return;
+    }
+    const username = userData.username;
+    const usertoken = userData.token;
     try {
       const response = await fetch('http://localhost:5000/publish', {
         method: 'POST',

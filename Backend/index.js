@@ -30,19 +30,20 @@ db.connect(err => {
 app.post('/login', (req, res) => {
   const { usertoken, username, password } = req.body;
   const query = 'SELECT * FROM users WHERE username = ? AND password = ?';
-  db.query(query, [username, password], (err, results) => {
+  db.query(query, [username, password], (err, selectResult) => {
     if (err) {
       res.status(500).send('Server error');
       return;
     }
-    if (results.length > 0) {
+    if (selectResult.length > 0) {
+        const userId = selectResult[0].id;
         const query = 'UPDATE users SET token = ? WHERE username = ? AND password = ?';
-        db.query(query, [usertoken, username, password], (err, results) => {
+        db.query(query, [usertoken, username, password], (err, updateResult) => {
           if (err) {
             res.status(500).send('Server error');
             return;
           }else{
-            res.status(200).send('Login successfuls');
+            res.status(200).json({ message: 'Login successfuls', id: userId});
           }
         });
     } else {

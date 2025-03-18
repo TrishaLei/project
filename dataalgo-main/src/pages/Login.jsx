@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Alert } from 'antd';
 import LoginStyle from "../assets/styles/login.module.css";
 import FormStyle from "../assets/styles/form.module.css";
-import Cookies from 'js-cookie';
+import { SetCookie } from '../components/auth/cookies.jsx';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -24,12 +24,13 @@ const Login = () => {
         body: JSON.stringify({ usertoken, username, password }),
       });
       if (response.ok) {
-        Cookies.set('username', username, { 
-          expires: 7, 
-          secure: true, 
-          sameSite: 'Strict' 
-        });
-        Cookies.set('token', usertoken, { 
+        const data = await response.json();
+        const cookieData = {
+          id: data.id,
+          username: username,
+          token: usertoken
+        };
+        SetCookie('data', cookieData, { 
           expires: 7, 
           secure: true, 
           sameSite: 'Strict' 
