@@ -162,6 +162,11 @@ body {
   align-items: center;
 }
 
+.btn-vote.voted {
+  background-color: #ffdd57; /* Highlight color */
+  border: 1px solid #ffdd57;
+}
+
 .post-actions .btn img {
   width: 1.25rem;
   /* filter: invert(57%) sepia(100%) saturate(298%) hue-rotate(73deg)

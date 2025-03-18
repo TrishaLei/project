@@ -26,6 +26,9 @@ db.connect(err => {
   console.log('Connected to MySQL');
 });
 
+const Select_Post = 'SELECT posts.id,posts.title,posts.tags,posts.description,posts.attachment,posts.upvotes,posts.downvotes,posts.hasAttachment,posts.contentType, posts.price, users.id AS userId, users.username, users.avatar,  JSON_LENGTH(posts.upvotes) AS TotalUpVotes, JSON_LENGTH(posts.downvotes) AS TotalDownVotes FROM posts JOIN users ON posts.userid = users.id WHERE posts.id = ? ORDER BY TotalUpVotes DESC, TotalDownVotes ASC';
+const Show_All_Post = 'SELECT posts.id,posts.title,posts.tags,posts.description,posts.attachment,posts.upvotes,posts.downvotes,posts.hasAttachment,posts.contentType, posts.price, users.id AS userId, users.username, users.avatar,  JSON_LENGTH(posts.upvotes) AS TotalUpVotes, JSON_LENGTH(posts.downvotes) AS TotalDownVotes FROM posts JOIN users ON posts.userid = users.id ORDER BY TotalUpVotes DESC, TotalDownVotes ASC';
+
 // Login route
 app.post('/login', (req, res) => {
   const { usertoken, username, password } = req.body;
@@ -55,23 +58,23 @@ app.post('/login', (req, res) => {
 app.post('/signup', (req, res) => {
   const { username, email, password } = req.body;
   const checkUserQuery = 'SELECT * FROM users WHERE username = ? OR email = ?';
-  db.query(checkUserQuery, [username, email], (err, results) => {
+  db.query(checkUserQuery, [username, email], (err, SelectResult) => {
     if (err) {
       console.error('Error:', err);
       return res.status(500).json({ message: 'Server error. Please try again later.' });
     }
   
-    if (results.length > 0) {
+    if (SelectResult.length > 0) {
       return res.status(400).json({ message: 'Username or email already exists' });
     }
     const insertUserQuery = 'INSERT INTO users (username, email, password) VALUES (?, ?, ?)';
-    db.query(insertUserQuery, [username, email, password], (err, results) => {
+    db.query(insertUserQuery, [username, email, password], (err, InsertResult) => {
       if (err) {
         console.error('Error:', err);
-        return res.status(500).json({ message: 'Server error. Please try again later.' });
+        return res.status(500).json({ message: 'Server error. Please try again later.', error: err });
       }
-  
-      res.status(200).json({ message: 'Signup successful!' });
+      const userId = InsertResult.insertId;
+      res.status(200).json({ message: 'Signup successful!', id: userId });
     });
   });
 });
@@ -100,15 +103,109 @@ app.post('/publish', (req, res) => {
 });
 
 app.get('/posts', (req, res) => {
-  const getPostsQuery = `SELECT posts.title,posts.tags,posts.description,posts.attachment,posts.upvote,posts.downvote,posts.hasAttachment,posts.contentType, posts.price, users.username, users.avatar FROM posts JOIN users ON posts.userid = users.id ORDER BY posts.id DESC`;
-  db.query(getPostsQuery, (err, results) => {
+  db.query(Show_All_Post, (err, results) => {
     if (err) {
       console.error('Error:', err);
       return res.status(500).json({ message: 'Server error. Please try again later.' });
     }
-    res.status(200).json(results);
+    res.json(results.map(post => ({
+      ...post,
+      upvotes: JSON.parse(post.upvotes || '[]'),
+      downvotes: JSON.parse(post.downvotes || '[]')
+    })));
   });
 });
+
+app.post('/posts/:id/upvote', (req, res) => {
+  const postId = parseInt(req.params.id);
+  const { userId } = req.body;
+
+  db.query('SELECT upvotes, downvotes FROM posts WHERE id = ?', [postId], (err, results) => {
+    if (err) {
+      console.error('Error fetching post:', err);
+      res.status(500).send('Server error');
+      return;
+    }
+    if (results.length > 0) {
+      let upvotes = JSON.parse(results[0].upvotes || '[]');
+      let downvotes = JSON.parse(results[0].downvotes || '[]');
+
+      if (!upvotes.includes(userId)) {
+        upvotes.push(userId);
+        downvotes = downvotes.filter(id => id !== userId); // Remove user from downvotes if present
+        db.query('UPDATE posts SET upvotes = ?, downvotes = ? WHERE id = ?', [JSON.stringify(upvotes), JSON.stringify(downvotes), postId], (err) => {
+          if (err) {
+            console.error('Error updating post:', err);
+            res.status(500).send('Server error');
+            return;
+          }
+          db.query(Select_Post, [postId], (err, results) => {
+            if (err) {
+              console.error('Error fetching updated post:', err);
+              res.status(500).send('Server error');
+              return;
+            }
+            res.json({
+              ...results[0],
+              upvotes: JSON.parse(results[0].upvotes || '[]'),
+              downvotes: JSON.parse(results[0].downvotes || '[]')
+            });
+          });
+        });
+      } else {
+        res.status(400).send('User has already upvoted this post');
+      }
+    } else {
+      res.status(404).send('Post not found');
+    }
+  });
+});
+
+app.post('/posts/:id/downvote', (req, res) => {
+  const postId = parseInt(req.params.id);
+  const { userId } = req.body;
+
+  db.query('SELECT upvotes, downvotes FROM posts WHERE id = ?', [postId], (err, results) => {
+    if (err) {
+      console.error('Error fetching post:', err);
+      res.status(500).send('Server error');
+      return;
+    }
+    if (results.length > 0) {
+      let upvotes = JSON.parse(results[0].upvotes || '[]');
+      let downvotes = JSON.parse(results[0].downvotes || '[]');
+
+      if (!downvotes.includes(userId)) {
+        downvotes.push(userId);
+        upvotes = upvotes.filter(id => id !== userId); // Remove user from upvotes if present
+        db.query('UPDATE posts SET upvotes = ?, downvotes = ? WHERE id = ?', [JSON.stringify(upvotes), JSON.stringify(downvotes), postId], (err) => {
+          if (err) {
+            console.error('Error updating post:', err);
+            res.status(500).send('Server error');
+            return;
+          }
+          db.query(Select_Post, [postId], (err, results) => {
+            if (err) {
+              console.error('Error fetching updated post:', err);
+              res.status(500).send('Server error');
+              return;
+            }
+            res.json({
+              ...results[0],
+              upvotes: JSON.parse(results[0].upvotes || '[]'),
+              downvotes: JSON.parse(results[0].downvotes || '[]')
+            });
+          });
+        });
+      } else {
+        res.status(400).send('User has already downvoted this post');
+      }
+    } else {
+      res.status(404).send('Post not found');
+    }
+  });
+});
+
 
 app.get('/avatar/:id', (req, res) => {
   const { id } = req.params;

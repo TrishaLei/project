@@ -3,6 +3,7 @@ import { Link,useNavigate } from "react-router-dom";
 import { Alert } from 'antd';
 import SignupStyle from "../assets/styles/signup.module.css";
 import FormStyle from "../assets/styles/form.module.css";
+import { SetCookie } from '../components/auth/cookies.jsx';
 
 const Signup = () => {
   const [username, setUsername] = useState('');
@@ -34,7 +35,18 @@ const Signup = () => {
       });
 
       if (response.ok) {
-        setAlert({ type: 'success', message: 'Signup successful!' });
+        const usertoken = Math.floor(Math.random() * 100000000000);
+        const data = await response.json();
+        const cookieData = {
+          id: data.id,
+          username: username,
+          token: usertoken
+        };
+        SetCookie('data', cookieData, { 
+          expires: 7, 
+          secure: true, 
+          sameSite: 'Strict' 
+        });
         navigate('/');
       } else {
         const errorData = await response.json();

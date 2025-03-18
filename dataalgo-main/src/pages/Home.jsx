@@ -1,16 +1,67 @@
 import { useState, useEffect } from 'react';
-import UserIcon from "../assets/images/user.svg";
 import UpArrow from "../assets/images/arrow-big-up.svg";
 import DownArrow from "../assets/images/arrow-big-down.svg";
+
+import HomeStyle from "../assets/styles/home.module.css";
 import "../assets/styles/home.css";
+
 import { GetCookie } from '../components/auth/cookies.jsx';
 
+//Alert Components
+import AlertComponent from '../components/Alert/AlertComponent.jsx';
+import { showAlert } from '../components/Alert/ShowAlert.js';
+
 const Home = () => {
+  const [alert, setAlert] = useState({ type: '', message: '' });
+  const [alertVisible, setAlertVisible] = useState(false);
   const [posts, setPosts] = useState([]);
   const [LoggedIn, setLoggedIn] = useState(false);
+  const [userId, setUserId] = useState(null);
 
-  const handleUpvote = () => {
+  const handleUpvote = async (postId) => {
+    try {
+      const userData = GetCookie('data');
+      if (!userData) {
+        showAlert(setAlert, setAlertVisible, 'error', 'Please login first!');
+        return;
+      }
+      const response = await fetch(`http://localhost:5000/posts/${postId}/upvote`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId:userData.id }),
+      });
+      if (response.ok) {
+        const updatedPost = await response.json();
+        setPosts(prevPosts => prevPosts.map(post => post.id === postId ? updatedPost : post));
+      }
+    } catch (error) {
+      console.error('Error upvoting post:', error);
+    }
+  };
 
+  const handleDownvote = async (postId) => {
+    try {
+      const userData = GetCookie('data');
+      if (!userData) {
+        showAlert(setAlert, setAlertVisible, 'error', 'Please login first!');
+        return;
+      }
+      const response = await fetch(`http://localhost:5000/posts/${postId}/downvote`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId:userData.id }),
+      });
+      if (response.ok) {
+        const updatedPost = await response.json();
+        setPosts(prevPosts => prevPosts.map(post => post.id === postId ? updatedPost : post));
+      }
+    } catch (error) {
+      console.error('Error downvoting post:', error);
+    }
   };
 
   useEffect(() => {
@@ -26,21 +77,14 @@ const Home = () => {
         console.error('Error:', error);
       });
 
-    GetCookie('data') ? setLoggedIn(false) : setLoggedIn(true);
-
-    const ws = new WebSocket('ws://localhost:5000/');
-    ws.onmessage = (event) => {
-      const newPost = JSON.parse(event.data);
-      setPosts(prevPosts => [newPost, ...prevPosts]);
-    };
-
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-
-    return () => {
-      ws.close();
-    };
+    const userData = GetCookie('data');
+    if (userData) {
+      setLoggedIn(false);
+      setUserId(userData.id);
+    } else {
+      setLoggedIn(true);
+    }
+    
   }, []);
 
   const getClassName = (contentType) => {
@@ -56,6 +100,7 @@ const Home = () => {
 
   return (
     <>
+      <AlertComponent alert={alert} setAlert={setAlert} alertVisible={alertVisible} />
       <main className="content">
       {LoggedIn ? (
         <>
@@ -81,7 +126,7 @@ const Home = () => {
                 <p className="post-author">
                   Posted by
                   <span className="icon">
-                    <img src={"http://localhost:5000/avatar/1"} alt="User" />
+                    <img src={ `http://localhost:5000/avatar/${post.userId}`} alt="User" />
                   </span>
                   <span>{post.username}</span>
                 </p>
@@ -89,9 +134,19 @@ const Home = () => {
                   switch (post.contentType) {
                     case 1:
                       return (
-                        <div className="post-actions">  
-                          <button className="btn buy">Subscribe</button>
+                        <>
+                          <div className="post-actions">  
+                            <button className="btn buy">Subscribe</button>
+                          </div>
+                          <div className="post-actions">
+                          <button onClick={() => handleUpvote(post.id)} className={`btn btn-vote ${post.upvotes.includes(userId) ? 'voted' : ''}`}>
+                            <img src={UpArrow} alt="Upvote" />
+                          </button>
+                          <button onClick={() => handleDownvote(post.id)} className={`btn btn-vote ${post.downvotes.includes(userId) ? 'voted' : ''}`}>
+                            <img src={DownArrow} alt="Downvote" />
+                          </button>
                         </div>
+                        </>
                       );
                     case 2:
                       return (
@@ -100,15 +155,23 @@ const Home = () => {
                           <div className="post-actions">  
                             <button className="btn buy">Buy Now</button>
                           </div>
+                          <div className="post-actions">
+                          <button onClick={() => handleUpvote(post.id)} className={`btn btn-vote ${post.upvotes.includes(userId) ? 'voted' : ''}`}>
+                            <img src={UpArrow} alt="Upvote" />
+                          </button>
+                          <button onClick={() => handleDownvote(post.id)} className={`btn btn-vote ${post.downvotes.includes(userId) ? 'voted' : ''}`}>
+                            <img src={DownArrow} alt="Downvote" />
+                          </button>
+                        </div>
                         </>
                       );
                     default:
                       return (
                         <div className="post-actions">
-                          <button onClick={handleUpvote} className="btn btn-vote">
+                          <button onClick={() => handleUpvote(post.id)} className={`btn btn-vote ${post.upvotes.includes(userId) ? 'voted' : ''}`}>
                             <img src={UpArrow} alt="Upvote" />
                           </button>
-                          <button className="btn btn-vote">
+                          <button onClick={() => handleDownvote(post.id)} className={`btn btn-vote ${post.downvotes.includes(userId) ? 'voted' : ''}`}>
                             <img src={DownArrow} alt="Downvote" />
                           </button>
                         </div>
