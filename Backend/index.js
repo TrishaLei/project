@@ -26,8 +26,9 @@ db.connect(err => {
   console.log('Connected to MySQL');
 });
 
-const Select_Post = 'SELECT posts.id,posts.title,posts.tags,posts.description,posts.attachment,posts.upvotes,posts.downvotes,posts.hasAttachment,posts.contentType, posts.price, users.id AS userId, users.username, users.avatar,  JSON_LENGTH(posts.upvotes) AS TotalUpVotes, JSON_LENGTH(posts.downvotes) AS TotalDownVotes FROM posts JOIN users ON posts.userid = users.id WHERE posts.id = ? ORDER BY TotalUpVotes DESC, TotalDownVotes ASC';
-const Show_All_Post = 'SELECT posts.id,posts.title,posts.tags,posts.description,posts.attachment,posts.upvotes,posts.downvotes,posts.hasAttachment,posts.contentType, posts.price, users.id AS userId, users.username, users.avatar,  JSON_LENGTH(posts.upvotes) AS TotalUpVotes, JSON_LENGTH(posts.downvotes) AS TotalDownVotes FROM posts JOIN users ON posts.userid = users.id ORDER BY TotalUpVotes DESC, TotalDownVotes ASC';
+const SelectUser_Post = 'SELECT posts.id,posts.title,posts.tags,posts.description,posts.attachment,posts.upvotes,posts.downvotes,posts.hasAttachment,posts.contentType, posts.price, posts.PostDate, users.id AS userId, users.username, users.avatar,  JSON_LENGTH(posts.upvotes) AS TotalUpVotes, JSON_LENGTH(posts.downvotes) AS TotalDownVotes FROM posts JOIN users ON posts.userid = users.id WHERE posts.userid = ? ORDER BY TotalUpVotes DESC, TotalDownVotes ASC';
+const Select_Post = 'SELECT posts.id,posts.title,posts.tags,posts.description,posts.attachment,posts.upvotes,posts.downvotes,posts.hasAttachment,posts.contentType, posts.price, posts.PostDate, users.id AS userId, users.username, users.avatar,  JSON_LENGTH(posts.upvotes) AS TotalUpVotes, JSON_LENGTH(posts.downvotes) AS TotalDownVotes FROM posts JOIN users ON posts.userid = users.id WHERE posts.id = ? ORDER BY TotalUpVotes DESC, TotalDownVotes ASC';
+const Show_All_Post = 'SELECT posts.id,posts.title,posts.tags,posts.description,posts.attachment,posts.upvotes,posts.downvotes,posts.hasAttachment,posts.contentType, posts.price, posts.PostDate, users.id AS userId, users.username, users.avatar,  JSON_LENGTH(posts.upvotes) AS TotalUpVotes, JSON_LENGTH(posts.downvotes) AS TotalDownVotes FROM posts JOIN users ON posts.userid = users.id ORDER BY TotalUpVotes DESC, TotalDownVotes ASC';
 
 // Login route
 app.post('/login', (req, res) => {
@@ -56,7 +57,7 @@ app.post('/login', (req, res) => {
 });
 
 app.post('/signup', (req, res) => {
-  const { username, email, password } = req.body;
+  const { username, email, password, JoinDate } = req.body;
   const checkUserQuery = 'SELECT * FROM users WHERE username = ? OR email = ?';
   db.query(checkUserQuery, [username, email], (err, SelectResult) => {
     if (err) {
@@ -67,8 +68,8 @@ app.post('/signup', (req, res) => {
     if (SelectResult.length > 0) {
       return res.status(400).json({ message: 'Username or email already exists' });
     }
-    const insertUserQuery = 'INSERT INTO users (username, email, password) VALUES (?, ?, ?)';
-    db.query(insertUserQuery, [username, email, password], (err, InsertResult) => {
+    const insertUserQuery = 'INSERT INTO users (username, email, password, JoinDate) VALUES (?, ?, ?, ?)';
+    db.query(insertUserQuery, [username, email, password, JoinDate], (err, InsertResult) => {
       if (err) {
         console.error('Error:', err);
         return res.status(500).json({ message: 'Server error. Please try again later.', error: err });
@@ -80,7 +81,7 @@ app.post('/signup', (req, res) => {
 });
 
 app.post('/publish', (req, res) => {
-  const { usertoken, username, title, tags, description, contentType, price } = req.body;
+  const { usertoken, username, title, tags, description, contentType, price, PostDate} = req.body;
   const checkUserQuery = 'SELECT * FROM users WHERE token = ? AND username = ?';
   db.query(checkUserQuery, [usertoken, username], (err, results) => {
     if (err) {
@@ -89,8 +90,8 @@ app.post('/publish', (req, res) => {
     }
     if (results.length > 0) {
       const userId = results[0].id;
-      const insertUserQuery = 'INSERT INTO posts (userid, title, tags, description, contentType, price) VALUES (?, ?, ?, ?, ?, ?)';
-      db.query(insertUserQuery, [userId, title, tags, description, contentType, price], (err, results) => {
+      const insertUserQuery = 'INSERT INTO posts (userid, title, tags, description, contentType, price, PostDate) VALUES (?, ?, ?, ?, ?, ?, ?)';
+      db.query(insertUserQuery, [userId, title, tags, description, contentType, price, PostDate], (err, results) => {
         if (err) {
           console.error('Error:', err);
           return res.status(500).json({ message: 'Server error. Please try again later.' });
@@ -104,6 +105,21 @@ app.post('/publish', (req, res) => {
 
 app.get('/posts', (req, res) => {
   db.query(Show_All_Post, (err, results) => {
+    if (err) {
+      console.error('Error:', err);
+      return res.status(500).json({ message: 'Server error. Please try again later.' });
+    }
+    res.json(results.map(post => ({
+      ...post,
+      upvotes: JSON.parse(post.upvotes || '[]'),
+      downvotes: JSON.parse(post.downvotes || '[]')
+    })));
+  });
+});
+
+app.get('/user/:id/posts', (req, res) => {
+  const postId = parseInt(req.params.id);
+  db.query(SelectUser_Post, [postId],(err, results) => {
     if (err) {
       console.error('Error:', err);
       return res.status(500).json({ message: 'Server error. Please try again later.' });
@@ -132,7 +148,7 @@ app.post('/posts/:id/upvote', (req, res) => {
 
       if (!upvotes.includes(userId)) {
         upvotes.push(userId);
-        downvotes = downvotes.filter(id => id !== userId); // Remove user from downvotes if present
+        downvotes = downvotes.filter(id => id !== userId); 
         db.query('UPDATE posts SET upvotes = ?, downvotes = ? WHERE id = ?', [JSON.stringify(upvotes), JSON.stringify(downvotes), postId], (err) => {
           if (err) {
             console.error('Error updating post:', err);
@@ -153,7 +169,26 @@ app.post('/posts/:id/upvote', (req, res) => {
           });
         });
       } else {
-        res.status(400).send('User has already upvoted this post');
+        upvotes = upvotes.filter(id => id !== userId);
+        db.query('UPDATE posts SET upvotes = ?, downvotes = ? WHERE id = ?', [JSON.stringify(upvotes), JSON.stringify(downvotes), postId], (err) => {
+          if (err) {
+            console.error('Error updating post:', err);
+            res.status(500).send('Server error');
+            return;
+          }
+          db.query(Select_Post, [postId], (err, results) => {
+            if (err) {
+              console.error('Error fetching updated post:', err);
+              res.status(500).send('Server error');
+              return;
+            }
+            res.json({
+              ...results[0],
+              upvotes: JSON.parse(results[0].upvotes || '[]'),
+              downvotes: JSON.parse(results[0].downvotes || '[]')
+            });
+          });
+        });
       }
     } else {
       res.status(404).send('Post not found');
@@ -177,7 +212,7 @@ app.post('/posts/:id/downvote', (req, res) => {
 
       if (!downvotes.includes(userId)) {
         downvotes.push(userId);
-        upvotes = upvotes.filter(id => id !== userId); // Remove user from upvotes if present
+        upvotes = upvotes.filter(id => id !== userId); 
         db.query('UPDATE posts SET upvotes = ?, downvotes = ? WHERE id = ?', [JSON.stringify(upvotes), JSON.stringify(downvotes), postId], (err) => {
           if (err) {
             console.error('Error updating post:', err);
@@ -198,7 +233,26 @@ app.post('/posts/:id/downvote', (req, res) => {
           });
         });
       } else {
-        res.status(400).send('User has already downvoted this post');
+        downvotes = downvotes.filter(id => id !== userId);
+        db.query('UPDATE posts SET upvotes = ?, downvotes = ? WHERE id = ?', [JSON.stringify(upvotes), JSON.stringify(downvotes), postId], (err) => {
+          if (err) {
+            console.error('Error updating post:', err);
+            res.status(500).send('Server error');
+            return;
+          }
+          db.query(Select_Post, [postId], (err, results) => {
+            if (err) {
+              console.error('Error fetching updated post:', err);
+              res.status(500).send('Server error');
+              return;
+            }
+            res.json({
+              ...results[0],
+              upvotes: JSON.parse(results[0].upvotes || '[]'),
+              downvotes: JSON.parse(results[0].downvotes || '[]')
+            });
+          });
+        });
       }
     } else {
       res.status(404).send('Post not found');
@@ -213,6 +267,22 @@ app.get('/avatar/:id', (req, res) => {
   res.sendFile(filePath, err => {
     if (err) {
       res.status(404).send('Image not found');
+    }
+  });
+});
+
+app.get('/user/:username', (req, res) => {
+  const { username } = req.params;
+  const checkUserQuery = 'SELECT username, email, id, balance, JoinDate FROM users WHERE username = ?';
+  db.query(checkUserQuery, [username], (err, results) => {
+    if (err) {
+      console.error('Error:', err);
+      return res.status(500).json({ message: 'Server error. Please try again later.' });
+    }
+    if (results.length > 0) {
+      return res.status(200).json(results);
+    }else{
+      return res.status(500).json(JSON.parse('[]'));
     }
   });
 });

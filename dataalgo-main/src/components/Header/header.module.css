@@ -17,6 +17,8 @@
 .Logo {
     font-size: 1.5em;
     font-weight: bold;
+    text-decoration: none;
+    color: white;
 }
 
 .NavToggleLabel {
@@ -50,43 +52,53 @@
     font-weight: bold;
 }
   
-.btn:hover {
+.Btn:hover {
     background-color: #e0e0e0;
 }
 
 .dropdown {
-    position: relative;
-    display: inline-block;
-  }
-  
-  .avatarButton {
-    background: none;
-    border: none;
+  position: relative;
+  display: inline-block;
+}
+.AvatarContainer{
+  margin-right: 20px;
+  display: flex;
+  align-items: center;
+}
+
+.avatar {
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+}
+
+.menu {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  background-color: white;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.menuItem {
+    display: flex;
+    align-items: center;
+    padding: 12px 17px;
     cursor: pointer;
-  }
-  
-  .avatar {
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-  }
-  
-  .menu {
-    position: absolute;
-    top: 40px;
-    right: 0;
-    background-color: white;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-    z-index: 1;
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  
-  .menuItem {
-    padding: 12px 16px;
+    color: black;
+    gap: 8px;
+}
+.menuItemLink {
+    display: flex;
+    align-items: center;
     cursor: pointer;
-  }
-  
-  .menuItem:hover {
+    color: black;
+    text-decoration: none;
+}
+.menuItem:hover {
     background-color: #f1f1f1;
-  }
+}

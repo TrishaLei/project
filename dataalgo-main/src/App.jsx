@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Foryoupage from "./pages/Foryoupage";
 import Post from "./pages/Post";
+import Profile from "./pages/Profile";
 
 const Routed = () => {
   const location = useLocation();
@@ -18,6 +19,7 @@ const Routed = () => {
       <Route path="/signup" element={<Signup />} />
       <Route path="/foryoupage" element={<Foryoupage />} />
       <Route path="/post" element={<Post />} />
+      <Route path="/profile/:username" element={<><Header /><Profile /><Footer/></>} />
     </Routes>
   );
 };

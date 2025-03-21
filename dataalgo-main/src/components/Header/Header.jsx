@@ -1,26 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from "react-router-dom";
-import { Avatar, Menu } from 'antd';
+import { Link } from "react-router-dom";
+import { UserOutlined, SettingOutlined, DollarOutlined, LogoutOutlined } from '@ant-design/icons';
 import HeaderStyle from './header.module.css';
-import UserIcon from "../../assets/images/user.svg";
-import Dropdown from '../DropDown/Dropdown.jsx';
 import { GetCookie, RemoveCookie } from '../auth/cookies.jsx';
 
 const Header = () => {
   const [isScrollingDown, setIsScrollingDown] = useState(false);
   const [isDropdownOpen, setisDropdownOpen] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
-  const navigate = useNavigate();
+  const [userDataServer, setuserDataServer] = useState([]);
 
   const userData = GetCookie('data');
-
   const username = userData ? userData.username : null;
   const userid = userData ? userData.id : null;
   const usertoken = userData ? userData.token : null;
 
   const handleLogout = () => {
     RemoveCookie('data');
-
+    window.location.reload();
   };
   const toggleDropdown = () => {
     setisDropdownOpen(!isDropdownOpen);
@@ -42,18 +39,33 @@ const Header = () => {
       return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY]);
 
+  useEffect(() => {
+    fetch(`http://localhost:5000/user/${username}`)
+    .then(async response => {
+      try {
+        const data = await response.json();
+        setuserDataServer(data[0]);
+        console.log(data[0]);
+      } catch (error) {
+        console.error('Error fetching userdata :', error);
+      }
+    }).catch(error => {
+      console.error('Error:', error);
+    });
+  }, [username]);
+
   const menuItems = [
-    { label: 'Profile', link: '/profile' },
-    { label: 'Settings', link: '/settings' },
-    { label: '$0.00' },
-    { label: 'Logout', onClick: handleLogout }
+    { label: 'Profile', link: `/profile/${username}`, icon: <UserOutlined /> },
+    { label: 'Settings', link: '/settings', icon: <SettingOutlined /> },
+    { label: `$${userDataServer ? userDataServer.balance : 0}`, link: '/wallet', icon: <DollarOutlined /> },
+    { label: 'Logout', onClick: handleLogout, icon: <LogoutOutlined /> }
   ];
 
   return (
     <>
       <div className={HeaderStyle.Spacer}></div>
       <header className={`${HeaderStyle.Header} ${isScrollingDown ? HeaderStyle.HeaderHidden : ""}`}>
-        <div className={HeaderStyle.Logo}>EduHub</div>
+        <Link to="/" className={HeaderStyle.Logo}>EduHub</Link>
         <label htmlFor="nav-toggle" className={HeaderStyle.NavToggleLabel}>
           <span></span>
           <span></span>
@@ -70,7 +82,7 @@ const Header = () => {
             </>
           ) : (
             <>
-            <div style={{ marginLeft: 'auto', marginRight: '20px' }}>
+            <div className={HeaderStyle.AvatarContainer}>
               <div className={HeaderStyle.dropdown}>
                 <img
                   src={`http://localhost:5000/avatar/${userid}`}
@@ -82,7 +94,8 @@ const Header = () => {
                   <div className={HeaderStyle.menu}>
                     {menuItems.map((item, index) => (
                       <div key={index} className={HeaderStyle.menuItem} onClick={item.onClick}>
-                        {item.link ? <Link to={item.link}>{item.label}</Link> : item.label}
+                        {item.icon}
+                        {item.link ? <Link className={HeaderStyle.menuItemLink} to={item.link}>{item.label}</Link> : item.label}
                       </div>
                     ))}
                   </div>

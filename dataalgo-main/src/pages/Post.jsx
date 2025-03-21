@@ -49,13 +49,14 @@ const Post = () => {
     }
     const username = userData.username;
     const usertoken = userData.token;
+    const PostDate = new Date().toISOString();
     try {
       const response = await fetch('http://localhost:5000/publish', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ usertoken, username, title, tags, description, contentType, price }),
+        body: JSON.stringify({ usertoken, username, title, tags, description, contentType, price, PostDate }),
       });
       if (response.ok) {
         setAlert({ type: 'success', message: 'Successfuly published' });

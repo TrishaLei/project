@@ -41,3 +41,20 @@
 .AlertVisible {
     transform: translateY(0);
 }
+.HomeContent{
+    margin-top: 60px;
+}
+.Hero {
+  text-align: center;
+  padding: 20px;
+  background-color: #e9f5e9;
+}
+
+.Hero h1 {
+  margin-bottom: 10px;
+  font-size: 2em;
+}
+
+.Hero p {
+  color: #555;
+}

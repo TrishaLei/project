@@ -1,0 +1,144 @@
+.Posts {
+  padding: 20px;
+}
+
+.Post {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: #fff;
+  margin-bottom: 15px;
+  padding: 15px;
+  border-radius: 5px;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.PostHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.PostTimestamp {
+  font-size: 0.8em;
+  color: gray;
+}
+
+.PostTitle {
+  font-size: 1.2em;
+  color: #333;
+}
+
+.PostTags {
+  margin-bottom: 0.125em;
+  font-size: 0.9em;
+  color: #777;
+}
+
+.PostAuthor {
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+}
+.PostAuthorName {
+    text-decoration: none;
+    color: black;
+    font-weight: normal;
+}
+.PostAuthorName:hover{
+    color: rgb(65, 65, 65);
+}
+
+.PostAuthor span {
+  font-weight: bold;
+}
+.PostAuthorIcon{
+    margin: 0 0.25rem;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+}
+.PostActions {
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.PostActions p{
+  font-weight: bold;
+  padding: 5px 5px;
+}
+.PostActionsButton {
+  background: #e0e0e0;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 10px; 
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.ButtonVote {
+  width: 2.25rem;
+  padding: 0 !important;
+  aspect-ratio: 1/1;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.ButtonVoted {
+  background-color: #ffdd57; /* Highlight color */
+  border: 1px solid #ffdd57;
+}
+
+.PostActionsButton img {
+  width: 1.25rem;
+  /* filter: invert(57%) sepia(100%) saturate(298%) hue-rotate(73deg)
+    brightness(86%) contrast(83%); */
+}
+
+.PostActionsButton:hover {
+  filter: brightness(90%);
+}
+
+.PostSubscription {
+  border-left: 5px solid #ff9800; 
+}
+.PostPremium {
+  border-left: 5px solid #2196f3; 
+}
+.PostPrice {
+  margin-top: 0.25rem;
+  color: #e67e22;
+  font-weight: bold;
+}
+.LockedContainer {
+  border: 2px dashed #ff0000; /* Red dashed border to indicate locked content */
+  padding: 16px;
+  text-align: center;
+  background-color: #ffe6e6; /* Light red background */
+  margin: 16px 0;
+}
+
+.LockedContainer p {
+  margin: 8px 0;
+  font-weight: bold;
+  color: #ff0000; /* Red text color */
+}
+
+.LockedContainer button {
+  background-color: #ff0000; /* Red background for the button */
+  color: #ffffff; /* White text color */
+  border: none;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 16px;
+  border-radius: 4px;
+}
+
+.LockedContainer button:hover {
+  background-color: #cc0000; /* Darker red on hover */
+}
