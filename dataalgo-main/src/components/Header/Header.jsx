@@ -45,7 +45,6 @@ const Header = () => {
       try {
         const data = await response.json();
         setuserDataServer(data[0]);
-        console.log(data[0]);
       } catch (error) {
         console.error('Error fetching userdata :', error);
       }

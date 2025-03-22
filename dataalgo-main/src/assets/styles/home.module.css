@@ -58,3 +58,44 @@
 .Hero p {
   color: #555;
 }
+
+.ModalContent{
+    background: white;
+    padding: 20px;
+    border-radius: 5px;
+    position: relative;
+}
+.ModdalPostContainer{
+
+}
+.ModalTitle{
+  font-size: 0.8em;
+  color: gray;
+  display: flex;
+  align-items: center;
+}
+
+.ModalTitle .Bold {
+    font-size: 1em;
+    font-weight: bold;
+}
+
+.ModalAuthor{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;  
+  font-size: 0.8em;
+  color: gray;
+}
+.ModalButton{
+    background-color: #e0e0e0; /* Red background for the button */
+    color: #000000; /* White text color */
+    border: none;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 16px;
+    border-radius: 4px;
+}
+.ModalButton:hover {
+    filter: brightness(90%);
+}

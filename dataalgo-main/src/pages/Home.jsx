@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { format, formatDistanceToNow, differenceInYears } from 'date-fns';
 import UpArrow from "../assets/images/arrow-big-up.svg";
 import DownArrow from "../assets/images/arrow-big-down.svg";
@@ -22,6 +22,7 @@ const Home = () => {
   const [userId, setUserId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState(null);
+  const navigate = useNavigate();
 
   const handleUpvote = async (postId) => {
     try {
@@ -92,6 +93,14 @@ const Home = () => {
     
   }, []);
 
+  const handleSubscribe = async (AuthorName) => {
+    try {
+      navigate('/profile/' + AuthorName);
+    } catch (error) {
+      console.error('Error downvoting post:', error);
+    }
+  };
+
   const getClassName = (contentType) => {
     switch (contentType) {
       case 1:
@@ -103,8 +112,8 @@ const Home = () => {
     }
   };
 
-  const openModal = (title, content) => {
-    setModalContent({ title, content });
+  const openModal = (AuthorId, AuthorName, PostTitle, PostTags, ModalTitle, ModalContent) => {
+    setModalContent({AuthorId, AuthorName, PostTitle, PostTags, ModalTitle, ModalContent});
     setIsModalOpen(true);
   };
 
@@ -113,6 +122,13 @@ const Home = () => {
     setModalContent(null);
   };
 
+  const PremiumContent = () => {
+    openModal(ProductTitle, 'Confirmation', 'Are you sure you want to subscribe to tc?');
+  };
+
+  const SubscribeContent = (AuthorId, AuthorName, PostTitle, PostTags) => {
+    openModal(AuthorId, AuthorName, PostTitle, PostTags, 'Confirmation', `Are you sure you want to subscribe to ${AuthorName}?`);
+  };
   return (
     <>
       <AlertComponent alert={alert} setAlert={setAlert} alertVisible={alertVisible} />
@@ -160,13 +176,13 @@ const Home = () => {
                           {post.isSubscribed ? (
                             <>
                               <div className={PostModel.PostActions}>  
-                                <button className={PostModel.PostActionsButton} onClick={() => openModal('Subscribe', 'Are you sure you want to subscribe to this content?')}>Subscribe</button>
+                                <button className={PostModel.PostActionsButton} onClick={() => SubscribeContent(post.userId, post.username, post.title, post.tags)}>Subscribe</button>
                               </div>
                             </>
                           ) : (
                             <div className={PostModel.LockedContainer}>
                               <p>This content is locked. Please subscribe to access.</p>
-                              <button className={PostModel.PostActionsButton} onClick={() => openModal('Subscribe', 'Are you sure you want to subscribe to this content?')}>Subscribe</button>
+                              <button className={PostModel.PostActionsButton} onClick={() => SubscribeContent(post.userId, post.username, post.title, post.tags)}>Subscribe</button>
                             </div>
                           )}
                           <div className={PostModel.PostActions}>
@@ -228,8 +244,23 @@ const Home = () => {
         </section>
       </main>
       <Modal show={isModalOpen} onClose={closeModal}>
-        <h2>{modalContent?.title}</h2>
-        <p>{modalContent?.content}</p>
+          <h2>{modalContent?.ModalTitle}</h2>
+          <div className={HomeStyle.ModdalPostContainer}>
+            <p>{modalContent?.ModalContent}</p>
+            <div className={PostModel.Post}>
+              <p className={HomeStyle.ModalTitle}>{modalContent?.PostTitle}</p>
+              <div className={HomeStyle.ModalAuthor}>
+                <p className={HomeStyle.ModalTitle}>
+                  Posted by: 
+                  <img src={ `http://localhost:5000/avatar/${modalContent?.AuthorId}`}  style={{margin: '0 0.25rem', width: '15px', height: '15px', borderRadius: '50%', overflow: 'hidden', display: 'inline-flex', justifyContent: 'center', alignItems: 'center'}} alt="User" />
+                  <div className={HomeStyle.Bold}>{modalContent?.AuthorName}</div>
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className={PostModel.PostActions}>
+              <button className={HomeStyle.ModalButton} onClick={() => handleSubscribe(modalContent?.AuthorName)}>Yes</button><button className={HomeStyle.ModalButton} onClick={closeModal}>No</button>
+          </div>
       </Modal>
     </>
   );
