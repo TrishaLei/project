@@ -193,7 +193,9 @@ const Home = () => {
 
         <section className={PostModel.Posts}>
           {posts.length === 0 ? (
-            <p>No posts available</p>
+              <div className={PostModel.Post}>
+                <p>No posts available</p>
+              </div>
           ) : (
             posts.map(post => (
               <div key={post.id} className={`${PostModel.Post} ${getClassName(post.contentType)}`}>
