@@ -110,6 +110,6 @@
 
 .SubPriceButton button:active,
 .SubPriceButton button:focus {
-    background-color: #3e8e41;
+    filter: brightness(50%);
     transform: scale(0.98);
 }
