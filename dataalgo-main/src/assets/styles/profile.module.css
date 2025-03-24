@@ -37,6 +37,10 @@
   color: #666;
 }
 
+.Information{
+  gap: 10px;
+}
+
 .ProfilePosts {
   margin-top: 20px;
 }
@@ -60,4 +64,51 @@
 .Post p {
   margin: 0;
   color: #333;
+}
+
+.ProfileActions {
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.ProfileActions p{
+  font-weight: bold;
+  padding: 5px 5px;
+}
+
+.ProfileActions button:hover{
+  filter: brightness(90%);
+}
+
+.ProfileActionsSubscribeButton {
+  background: var(--Actionbutton);
+  color: #f6f6f6;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  filter: drop-shadow(0px 0 0px var(--Actionbutton));
+  transition: filter 0.3s ease; 
+}
+
+.ProfileActionsSubscribeButton:hover {
+  filter: drop-shadow(0px 0 20px var(--Actionbutton)) !important;
+}
+
+.ProfileActionsFollowButton {
+  background: var(--color-primary);
+  color: #f6f6f6;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  filter: drop-shadow(0px 0 0px var(--color-primary));
+  transition: filter 0.3s ease; 
+}
+  
+.ProfileActionsFollowButton:hover {
+  filter: drop-shadow(0px 0 20px var(--color-primary)) !important;
 }

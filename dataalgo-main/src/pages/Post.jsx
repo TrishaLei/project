@@ -1,9 +1,11 @@
 import { useState,  useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Form, Link, useNavigate } from "react-router-dom";
 import { Alert } from 'antd';
 import PostStyle from "../assets/styles/post.module.css";
 import FormStyle from "../assets/styles/form.module.css";
-import { GetCookie } from '../components/auth/cookies.jsx';
+import { GetCookie, RemoveCookie } from '../components/auth/cookies.jsx';
+import AlertComponent from '../components/Alert/AlertComponent.jsx';
+import { showAlert } from '../components/Alert/ShowAlert.js';
 
 const Post = () => {
   const [title, setTitle] = useState('');
@@ -80,53 +82,33 @@ const Post = () => {
         body: formData,
       });
       if (response.ok) {
-        setAlert({ type: 'success', message: 'Successfuly published' });
+        showAlert(setAlert, setAlertVisible, 'success', 'Successfuly published!');
         setTimeout(() => {
           navigate('/');
         }, 1000);
       } else if(response.status === 401) {
-        setAlert({ type: 'error', message: 'Invalid Post. Please try again.' });
+        showAlert(setAlert, setAlertVisible, 'error', 'Invalid Post. Please try again.');
+      }else if(response.status === 500){
+        setAlertVisible(true);
+        showAlert(setAlert, setAlertVisible, 'error', 'Your account has been logged in from another device. Please login again. You will be redirected to login page in 5 seconds.');
+        RemoveCookie('data');
+        setTimeout(() => {
+          setAlertVisible(false);
+          navigate('/login');
+        }, 5000);
       }else{
-        setAlert({ type: 'error', message: 'Server error. Please try again later.' });
+        showAlert(setAlert, setAlertVisible, 'error', 'Server error. Please try again later.');
       }
-      setAlertVisible(true);
-      setTimeout(() => {
-        setAlertVisible(false);
-      }, 3000);
     } catch (error) {
       console.error('Error:', error);
-      setAlert({ type: 'error', message: 'Server error. Please try again later.' });
-      setAlertVisible(true);
-      setTimeout(() => {
-        setAlertVisible(false);
-      }, 3000);
+      showAlert(setAlert, setAlertVisible, 'error', 'Server error. Please try again later.');
     }
   };
 
 
   return (
     <>
-    <div className={`${PostStyle.Alert} ${alertVisible ? PostStyle.AlertVisible : PostStyle.AlertHidden}`}>
-        {alert.message && (
-          <Alert
-            message={alert.message}
-            type={alert.type}
-            showIcon
-            onClose={() => setAlert({ type: '', message: '' })}
-          />
-        )}
-      </div>
-      <header className="header">
-        <div className="logo">EduHub</div>
-        <nav className="nav">
-          <Link to="/" className="btn">
-            Home
-          </Link>
-          <Link to="/profile" className="btn">
-            Profile
-          </Link>
-        </nav>
-      </header>
+      <AlertComponent alert={alert} setAlert={setAlert} alertVisible={alertVisible} />
       <main className={PostStyle.Wrapper}>
         <section className={FormStyle.PostFormContainer}>
           <h2>Create a new post</h2>
@@ -165,6 +147,7 @@ const Post = () => {
             <div className={FormStyle.FormGroup}>
               <label htmlFor="description">Description</label>
               <textarea
+                classname={FormStyle.TextArea}
                 id="description"
                 name="description"
                 placeholder="Write your post description here..."

@@ -16,7 +16,7 @@ const Routed = () => {
       <Route path="/" element={<><Header /><Home /><Footer/></>} />
       <Route path="/login" element={<><Login /></>} />
       <Route path="/signup" element={<Signup />} />
-      <Route path="/post" element={<Post />} />
+      <Route path="/post" element={<><Header /><Post /></>} />
       <Route path="/profile/:username" element={<><Header /><Profile /><Footer/></>} />
     </Routes>
   );

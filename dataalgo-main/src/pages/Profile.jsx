@@ -130,7 +130,14 @@ const Profile = () => {
         <img src={`http://localhost:5000/avatar/${user.id}`} alt="User" className={ProfileStyle.ProfileAvatar} />
         <div className={ProfileStyle.ProfileInfo}>
           <h1>{user.username}</h1>
-          <p>Joined: {new Date(user.JoinDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' })}</p>
+          <div className={ProfileStyle.Information}>
+            <p>Joined: {new Date(user.JoinDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' })}</p>
+            <p>{user.followers.length > 0 ? `${user.followers.length} Followers`: `${user.followers.length} Follower`} • {user.subscribers.length > 0 ? `${user.subscribers.length} Subscribers`: `${user.subscribers.length} Subscriber`} • {posts.length > 0 ? `${posts.length} Posts`: `${posts.length} Post`}</p>
+          </div>
+          <div className={ProfileStyle.ProfileActions}>  
+            <button className={ProfileStyle.ProfileActionsFollowButton} onClick={() => openModal('Subscribe')}>Follow</button>
+            <button className={ProfileStyle.ProfileActionsSubscribeButton} onClick={() => openModal('Subscribe')}>Subscribe</button>
+          </div>
         </div>
       </div>
       <div className={ProfileStyle.ProfilePosts}>

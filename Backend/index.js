@@ -54,9 +54,9 @@ app.post('/login', (req, res) => {
     if (selectResult.length > 0) {
         const userId = selectResult[0].id;
         const query = 'UPDATE users SET token = ? WHERE username = ? AND password = ?';
-        db.query(query, [usertoken, username, password], (err, updateResult) => {
+        db.query(query, [usertoken, username, password], (err) => {
           if (err) {
-            res.status(500).send('Server error');
+            res.status(500).send('Server error Error: ', err);
             return;
           }else{
             res.status(200).json({ message: 'Login successfuls', id: userId});
@@ -375,7 +375,7 @@ app.get('/avatar/:id', (req, res) => {
 
 app.get('/user/:username', (req, res) => {
   const { username } = req.params;
-  const checkUserQuery = 'SELECT username, email, id, balance, JoinDate FROM users WHERE username = ?';
+  const checkUserQuery = 'SELECT id, username, email, balance, subscribers, followers, JoinDate FROM users WHERE username = ?';
   db.query(checkUserQuery, [username], (err, results) => {
     if (err) {
       console.error('Error:', err);
@@ -385,6 +385,74 @@ app.get('/user/:username', (req, res) => {
       return res.status(200).json(results);
     }else{
       return res.status(500).json(JSON.parse('[]'));
+    }
+  });
+});
+
+app.post('/user/:id/follow', (req, res) => {
+  const postId = parseInt(req.params.id);
+  const { userId } = req.body;
+
+  db.query('SELECT upvotes, downvotes FROM posts WHERE id = ?', [postId], (err, results) => {
+    if (err) {
+      console.error('Error fetching post:', err);
+      res.status(500).send('Server error');
+      return;
+    }
+    if (results.length > 0) {
+      let upvotes = JSON.parse(results[0].upvotes || '[]');
+      let downvotes = JSON.parse(results[0].downvotes || '[]');
+
+      if (!upvotes.includes(userId)) {
+        upvotes.push(userId);
+        downvotes = downvotes.filter(id => id !== userId); 
+        db.query('UPDATE posts SET upvotes = ?, downvotes = ? WHERE id = ?', [JSON.stringify(upvotes), JSON.stringify(downvotes), postId], (err) => {
+          if (err) {
+            console.error('Error updating post:', err);
+            res.status(500).send('Server error');
+            return;
+          }
+          db.query(Select_Post, [postId], (err, results) => {
+            if (err) {
+              console.error('Error fetching updated post:', err);
+              res.status(500).send('Server error');
+              return;
+            }
+            res.json({
+              ...results[0],
+              upvotes: JSON.parse(results[0].upvotes || '[]'),
+              downvotes: JSON.parse(results[0].downvotes || '[]'),
+              purchase: JSON.parse(results[0].purchase || '[]'),
+              subscribers: JSON.parse(results[0].subscribers || '[]')
+            });
+          });
+        });
+      } else {
+        upvotes = upvotes.filter(id => id !== userId);
+        db.query('UPDATE posts SET upvotes = ?, downvotes = ? WHERE id = ?', [JSON.stringify(upvotes), JSON.stringify(downvotes), postId], (err) => {
+          if (err) {
+            console.error('Error updating post:', err);
+            res.status(500).send('Server error');
+            return;
+          }
+          db.query(Select_Post, [postId], (err, results) => {
+            if (err) {
+              console.error('Error fetching updated post:', err);
+              res.status(500).send('Server error');
+              return;
+            }
+            res.json({
+              ...results[0],
+              upvotes: JSON.parse(results[0].upvotes || '[]'),
+              downvotes: JSON.parse(results[0].downvotes || '[]'),
+              purchase: JSON.parse(results[0].purchase || '[]'),
+              subscribers: JSON.parse(results[0].subscribers || '[]')
+            });
+          });
+        });
+      }
+    } else {
+      res.status(404).send('Post not found');
     }
   });
 });
