@@ -39,7 +39,7 @@ const Header = () => {
       return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY]);
 
-  useEffect(() => {
+  const fetchUserData = () => {
     fetch(`http://localhost:5000/user/${username}`)
     .then(async response => {
       try {
@@ -51,12 +51,25 @@ const Header = () => {
     }).catch(error => {
       console.error('Error:', error);
     });
+  };
+
+  useEffect(() => {
+    fetchUserData();
+    const handleUserDataUpdate = () => {
+      fetchUserData();
+    };
+
+    window.addEventListener('userDataUpdate', handleUserDataUpdate);
+
+    return () => {
+      window.removeEventListener('userDataUpdate', handleUserDataUpdate);
+    };
   }, [username]);
 
   const menuItems = [
     { label: 'Profile', link: `/profile/${username}`, icon: <UserOutlined /> },
     { label: 'Settings', link: '/settings', icon: <SettingOutlined /> },
-    { label: `$${userDataServer ? userDataServer.balance : 0}`, link: '/wallet', icon: <DollarOutlined /> },
+    { label: `$${userDataServer && userDataServer.balance ? (Math.floor(userDataServer.balance * 100) / 100).toFixed(2) : '0.00'}`, link: '/wallet', icon: <DollarOutlined /> },
     { label: 'Logout', onClick: handleLogout, icon: <LogoutOutlined /> }
   ];
 

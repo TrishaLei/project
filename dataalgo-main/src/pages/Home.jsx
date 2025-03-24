@@ -102,7 +102,7 @@ const Home = () => {
   };
 
 
-  const handlePurchase = async (PostID, PostPrice, AuthorName) => {
+  const handlePurchase = async (PostID, PostPrice) => {
     try {
       const userData = GetCookie('data');
       if (!userData) {
@@ -119,21 +119,22 @@ const Home = () => {
         const userDataServer = await UserDataResponse.json();
         if(PostPrice > userDataServer[0].balance){
           showAlert(setAlert, setAlertVisible, 'error', 'Insufficient balance!');
-        }else{
-          const PurchaseResponse = await fetch(`http://localhost:5000/purchase/${PostID}/${AuthorName}/${userData.username}`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ userId:userData.id }),
-          });
-          if (PurchaseResponse.ok) {
+          return;
+        }
+        const PurchaseResponse = await fetch(`http://localhost:5000/purchase/${PostID}/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username:userData.username }),
+        });
+        if (PurchaseResponse.ok) {
 
-            const updatedPost = await PurchaseResponse.json();
-            setPosts(prevPosts => prevPosts.map(post => post.id === PostID ? updatedPost : post));
-            showAlert(setAlert, setAlertVisible, 'success', 'Purchase successful!');
-            closeModal();
-          }
+          const updatedPost = await PurchaseResponse.json();
+          setPosts(prevPosts => prevPosts.map(post => post.id === PostID ? updatedPost : post));
+          window.dispatchEvent(new Event('userDataUpdate'));
+          showAlert(setAlert, setAlertVisible, 'success', 'Purchase successful!');
+          closeModal();
         }
       }
     } catch (error) {
@@ -251,6 +252,9 @@ const Home = () => {
                               <div className={PostModel.Post}>
                                 <div className={PostModel.PostActions}>  
                                   <p>{post.description}</p>
+                                  {post.hasAttachment ? (
+                                    <a href={`http://localhost:5000/attachment/${post.id}`} download>Download Attachment</a>
+                                  ) : null}
                                 </div>
                               </div>
                             </>
@@ -317,7 +321,7 @@ const Home = () => {
               case 2:
                 return(
                   <div className={PostModel.PostActions}>
-                    <button className={HomeStyle.ModalButton} onClick={() => handlePurchase(modalContent?.PostId, modalContent?.PostPrice,modalContent?.AuthorName)}>Purchase</button><button className={HomeStyle.ModalButton} onClick={closeModal}>Cancel</button>
+                    <button className={HomeStyle.ModalButton} onClick={() => handlePurchase(modalContent?.PostId, modalContent?.PostPrice)}>Purchase</button><button className={HomeStyle.ModalButton} onClick={closeModal}>Cancel</button>
                   </div>
                 );
               default:

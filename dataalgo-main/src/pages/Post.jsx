@@ -15,6 +15,8 @@ const Post = () => {
   const [price, setPrice] = useState(0.0);
   const [alert, setAlert] = useState({ type: '', message: '' });
   const [alertVisible, setAlertVisible] = useState(false);
+  const [attachments, setAttachments] = useState([]);
+  const [hasAttachment, setHasAttachments] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,6 +42,11 @@ const Post = () => {
     setContentType(2);
   };
 
+  const handleAttachmentsChange = (e) => {
+    setAttachments(e.target.files);
+    setHasAttachments(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const userData = GetCookie('data');
@@ -51,12 +58,26 @@ const Post = () => {
     const usertoken = userData.token;
     const PostDate = new Date().toISOString();
     try {
+      const formData = new FormData();
+      formData.append('usertoken', usertoken);
+      formData.append('username', username);
+      formData.append('title', title);
+      formData.append('tags', tags);
+      formData.append('description', description);
+      formData.append('contentType', contentType);
+      formData.append('price', price);
+      formData.append('PostDate', PostDate);
+      formData.append('hasAttachments', attachments.length > 0);
+
+      if (attachments.length > 0) {
+        for (let i = 0; i < attachments.length; i++) {
+          formData.append('attachments', attachments[i]);
+        }
+      }
+
       const response = await fetch('http://localhost:5000/publish', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ usertoken, username, title, tags, description, contentType, price, PostDate }),
+        body: formData,
       });
       if (response.ok) {
         setAlert({ type: 'success', message: 'Successfuly published' });
@@ -138,7 +159,7 @@ const Post = () => {
 
             <div className={FormStyle.FormGroup}>
               <label htmlFor="attachments">Attachments</label>
-              <input type="file" id="attachments" name="attachments" multiple />
+              <input type="file" id="attachments" name="attachments" multiple onChange={handleAttachmentsChange} />
             </div>
 
             <div className={FormStyle.FormGroup}>

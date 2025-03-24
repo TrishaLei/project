@@ -71,6 +71,7 @@
   width: 32px;
   height: 32px;
   display: flex;
+  z-index: 41;
 }
 
 .menu {
