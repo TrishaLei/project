@@ -251,10 +251,12 @@ const Profile = () => {
             <p>Joined: {new Date(user.JoinDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: '2-digit' })}</p>
             <p>{user.followers.length > 1 ? `${user.followers.length} Followers`: `${user.followers.length} Follower`} • {user.subscribers.length > 0 ? `${user.subscribers.length} Subscribers`: `${user.subscribers.length} Subscriber`} • {posts.length > 0 ? `${posts.length} Posts`: `${posts.length} Post`}</p>
           </div>
-          <div className={ProfileStyle.ProfileActions}>  
-            <button className={ProfileStyle.ProfileActionsFollowButton} onClick={() => handleFollow(user.username)}>{user.followers.includes(userIdMe) ? 'Unfollow' : 'Follow'}</button>
-            <button className={ProfileStyle.ProfileActionsSubscribeButton} onClick={() => openModal('Subscribe')}>Subscribe</button>
-          </div>
+          {user.id !== userIdMe ? (
+            <div className={ProfileStyle.ProfileActions}>  
+              <button className={ProfileStyle.ProfileActionsFollowButton} onClick={() => handleFollow(user.username)}>{user.followers.includes(userIdMe) ? 'Unfollow' : 'Follow'}</button>
+              <button className={ProfileStyle.ProfileActionsSubscribeButton} onClick={() => openModal('Subscribe')}>Subscribe</button>
+            </div>
+          ) : null}
         </div>
       </div>
       

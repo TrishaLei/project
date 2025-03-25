@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Post from "./pages/Post";
 import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 import '@fortawesome/fontawesome-free/css/all.min.css';
 
 const Routed = () => {
@@ -18,6 +19,7 @@ const Routed = () => {
       <Route path="/login" element={<><Login /></>} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/post" element={<><Header /><Post /></>} />
+      <Route path="/settings" element={<><Header /><Settings /></>} />
       <Route path="/profile/:username" element={<><Header /><Profile /><Footer/></>} />
     </Routes>
   );
