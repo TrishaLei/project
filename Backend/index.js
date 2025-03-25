@@ -16,10 +16,10 @@ const storage = multer.diskStorage({
     cb(null, 'PostAttachments/');
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname);
+    const sanitizedFilename = file.originalname.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_\-\.]/g, '');
+    cb(null, Date.now() + '-' + sanitizedFilename);
   },
 });
-
 const upload = multer({ storage });
 
 // MySQL connection
@@ -63,7 +63,7 @@ app.post('/login', (req, res) => {
           }
         });
     } else {
-      res.status(401).send('Invalid credentials2');
+      res.status(401).send('Invalid credentials');
     }
   });
 });
@@ -95,7 +95,6 @@ app.post('/signup', (req, res) => {
 app.post('/publish', upload.array('attachments'), (req, res) => {
   const { usertoken, username, title, tags, description, contentType, price, hasAttachments, PostDate } = req.body;
   const attachments = req.files ? req.files.map(file => file.filename) : [];
-
   const checkUserQuery = 'SELECT * FROM users WHERE token = ? AND username = ?';
   db.query(checkUserQuery, [usertoken, username], (err, results) => {
     if (err) {
@@ -105,13 +104,12 @@ app.post('/publish', upload.array('attachments'), (req, res) => {
     if (results.length > 0) {
       const userId = results[0].id;
       const insertUserQuery = 'INSERT INTO posts (userid, title, tags, description, contentType, price, attachments, hasAttachments, PostDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
-      db.query(insertUserQuery, [userId, title, tags, description, contentType, price, JSON.stringify(attachments), hasAttachments, PostDate], (err, results) => {
+      db.query(insertUserQuery, [userId, title, tags, description, contentType, price, JSON.stringify(attachments), hasAttachments, PostDate], (err, results2) => {
         if (err) {
           console.error('Error:', err);
           return res.status(500).json({ message: 'Server error. Please try again later.' });
-        }else{
-          res.status(200).send('Post published');
         }
+        return res.status(200).json({ message: 'Post published!' });
       });
     }else{
       return res.status(500).json({ message: 'Invalid token!' });
@@ -363,6 +361,33 @@ app.post('/purchase/:postid', (req, res) => {
   });
 });
 
+app.post('/posts/download', (req, res) => {
+  const { PostId, userId, Filename } = req.body;
+  const checkUserQuery = 'SELECT purchase, userid FROM posts WHERE id = ?';
+  db.query(checkUserQuery, [PostId], (err, results) => {
+    if (err) {
+      console.error('Error:', err);
+      return res.status(500).json({ message: 'Server error. Please try again later.' });
+    }
+    if (results.length > 0) {
+      results[0].purchase = JSON.parse(results[0].purchase || '[]');
+      if(results[0].purchase.includes(userId) || results[0].userid === userId){
+        const { id } = req.params;
+        const filePath = __dirname + `/PostAttachments/${Filename}`;
+        res.sendFile(filePath, err => {
+          if (err) {
+            res.status(404).send('File not found' + Filename);
+          }
+        });
+      }else{
+        return res.status(500).json({ message: 'You have not purchased this post!' });
+      }
+    }else{
+      return res.status(200).json({ message: 'Post not available!' })
+    }
+  });
+});
+
 app.get('/avatar/:id', (req, res) => {
   const { id } = req.params;
   const filePath = __dirname + `/public/avatar/${id}.png`;
@@ -382,72 +407,78 @@ app.get('/user/:username', (req, res) => {
       return res.status(500).json({ message: 'Server error. Please try again later.' });
     }
     if (results.length > 0) {
-      return res.status(200).json(results);
+      return res.json({
+        ...results[0],
+        followers: JSON.parse(results[0].followers || '[]'),
+        subscribers: JSON.parse(results[0].subscribers || '[]')
+      });
     }else{
       return res.status(500).json(JSON.parse('[]'));
     }
   });
 });
 
-app.post('/user/:id/follow', (req, res) => {
-  const postId = parseInt(req.params.id);
-  const { userId } = req.body;
-
-  db.query('SELECT upvotes, downvotes FROM posts WHERE id = ?', [postId], (err, results) => {
+app.post('/user/follow/', (req, res) => {
+  const { Authorname, userid } = req.body;
+  db.query('SELECT followers, id FROM users WHERE username = ?', [Authorname], (err, AuthorResults) => {
     if (err) {
       console.error('Error fetching post:', err);
       res.status(500).send('Server error');
       return;
     }
-    if (results.length > 0) {
-      let upvotes = JSON.parse(results[0].upvotes || '[]');
-      let downvotes = JSON.parse(results[0].downvotes || '[]');
-
-      if (!upvotes.includes(userId)) {
-        upvotes.push(userId);
-        downvotes = downvotes.filter(id => id !== userId); 
-        db.query('UPDATE posts SET upvotes = ?, downvotes = ? WHERE id = ?', [JSON.stringify(upvotes), JSON.stringify(downvotes), postId], (err) => {
+    if (AuthorResults.length > 0) {
+      let followers = JSON.parse(AuthorResults[0].followers || '[]');
+      if(AuthorResults[0].id === userid){
+        return res.status(500).json({ message: 'You cannot follow yourself!' });
+      }
+      if (!followers.includes(userid)) {
+        followers.push(userid);
+        db.query('UPDATE users SET followers = ? WHERE username = ?', [JSON.stringify(followers), Authorname], (err) => {
           if (err) {
             console.error('Error updating post:', err);
             res.status(500).send('Server error');
             return;
           }
-          db.query(Select_Post, [postId], (err, results) => {
+          db.query('SELECT id, username, email, balance, subscribers, followers, JoinDate FROM users WHERE username = ?', [Authorname], (err, NewAuthorResults) => {
             if (err) {
               console.error('Error fetching updated post:', err);
               res.status(500).send('Server error');
               return;
             }
-            res.json({
-              ...results[0],
-              upvotes: JSON.parse(results[0].upvotes || '[]'),
-              downvotes: JSON.parse(results[0].downvotes || '[]'),
-              purchase: JSON.parse(results[0].purchase || '[]'),
-              subscribers: JSON.parse(results[0].subscribers || '[]')
-            });
+            if(NewAuthorResults.length > 0){
+              return res.json({
+                ...NewAuthorResults[0],
+                followers: JSON.parse(NewAuthorResults[0].followers || '[]'),
+                subscribers: JSON.parse(NewAuthorResults[0].subscribers || '[]')
+              });
+            }else{
+              return res.status(500).json(JSON.parse('[]'));
+            }
           });
         });
       } else {
-        upvotes = upvotes.filter(id => id !== userId);
-        db.query('UPDATE posts SET upvotes = ?, downvotes = ? WHERE id = ?', [JSON.stringify(upvotes), JSON.stringify(downvotes), postId], (err) => {
+        followers = followers.filter(id => id !== userid);
+        db.query('UPDATE users SET followers = ? WHERE username = ?', [JSON.stringify(followers), Authorname], (err) => {
           if (err) {
             console.error('Error updating post:', err);
             res.status(500).send('Server error');
             return;
           }
-          db.query(Select_Post, [postId], (err, results) => {
+          db.query('SELECT id, username, email, balance, subscribers, followers, JoinDate FROM users WHERE username = ?', [Authorname], (err, NewAuthorResults) => {
             if (err) {
               console.error('Error fetching updated post:', err);
               res.status(500).send('Server error');
               return;
             }
-            res.json({
-              ...results[0],
-              upvotes: JSON.parse(results[0].upvotes || '[]'),
-              downvotes: JSON.parse(results[0].downvotes || '[]'),
-              purchase: JSON.parse(results[0].purchase || '[]'),
-              subscribers: JSON.parse(results[0].subscribers || '[]')
-            });
+            if(NewAuthorResults.length > 0){
+              return res.json({
+                ...NewAuthorResults[0],
+                followers: JSON.parse(NewAuthorResults[0].followers || '[]'),
+                subscribers: JSON.parse(NewAuthorResults[0].subscribers || '[]')
+              });
+            }else{
+              return res.status(500).json(JSON.parse('[]'));
+            }
           });
         });
       }

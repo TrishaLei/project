@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Post from "./pages/Post";
 import Profile from "./pages/Profile";
+import '@fortawesome/fontawesome-free/css/all.min.css';
 
 const Routed = () => {
   const location = useLocation();

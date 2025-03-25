@@ -64,12 +64,13 @@ const Post = () => {
       formData.append('usertoken', usertoken);
       formData.append('username', username);
       formData.append('title', title);
-      formData.append('tags', tags);
+      formData.append('tags', tags);  
       formData.append('description', description);
       formData.append('contentType', contentType);
       formData.append('price', price);
+      formData.append('hasAttachments', hasAttachment);
       formData.append('PostDate', PostDate);
-      formData.append('hasAttachments', attachments.length > 0);
+
 
       if (attachments.length > 0) {
         for (let i = 0; i < attachments.length; i++) {
