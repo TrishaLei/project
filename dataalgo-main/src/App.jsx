@@ -6,6 +6,7 @@ import Footer from "./components/Footer/Footer";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import Publish from "./pages/Publish";
 import Post from "./pages/Post";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
@@ -18,9 +19,10 @@ const Routed = () => {
       <Route path="/" element={<><Header /><Home /><Footer/></>} />
       <Route path="/login" element={<><Login /></>} />
       <Route path="/signup" element={<Signup />} />
-      <Route path="/post" element={<><Header /><Post /></>} />
+      <Route path="/publish" element={<><Header /><Publish /></>} />
       <Route path="/settings" element={<><Header /><Settings /></>} />
       <Route path="/profile/:username" element={<><Header /><Profile /><Footer/></>} />
+      <Route path="/post/:postid" element={<><Header /><Post /></>} />
     </Routes>
   );
 };

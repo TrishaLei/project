@@ -15,20 +15,19 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const usertoken = Math.floor(Math.random() * 100000000000);
       const response = await fetch('http://localhost:5000/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ usertoken, username, password }),
+        body: JSON.stringify({ username, password }),
       });
       if (response.ok) {
         const data = await response.json();
         const cookieData = {
           id: data.id,
           username: username,
-          token: usertoken
+          token: data.token
         };
         SetCookie('data', cookieData, { 
           expires: 7, 

@@ -37,12 +37,11 @@ const Signup = () => {
       });
 
       if (response.ok) {
-        const usertoken = Math.floor(Math.random() * 100000000000);
         const data = await response.json();
         const cookieData = {
           id: data.id,
           username: username,
-          token: usertoken
+          token: data.token
         };
         SetCookie('data', cookieData, { 
           expires: 7, 

@@ -45,7 +45,13 @@ const Header = () => {
   }, [lastScrollY]);
 
   const fetchUserData = () => {
-    fetch(`http://localhost:5000/user/${username}`)
+    fetch(`http://localhost:5000/user/${username}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `${usertoken}`
+      }
+    })
     .then(async response => {
       try {
         const data = await response.json();
@@ -59,7 +65,9 @@ const Header = () => {
   };
 
   useEffect(() => {
-    fetchUserData();
+    if(usertoken){
+      fetchUserData();
+    }
     const handleUserDataUpdate = () => {
       fetchUserData();
     };
@@ -118,8 +126,8 @@ const Header = () => {
                   </div>
                 )}
               </div>
-              <Link to="/post" className={HeaderStyle.Btn}>
-                Post
+              <Link to="/publish" className={HeaderStyle.Btn}>
+                Publish
               </Link>
             </div>
             </>

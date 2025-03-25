@@ -105,9 +105,12 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+.PurchasesContainer {
+  max-height: 57vh; 
+  overflow-y: auto;
+}
+
 /* Settings Page */
-
-
 
 
 

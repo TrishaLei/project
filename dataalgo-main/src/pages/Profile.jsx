@@ -44,6 +44,7 @@ const Profile = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `${userData.token}`
         },
         body: JSON.stringify({ userId:userData.id }),
       });
@@ -67,6 +68,7 @@ const Profile = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `${userData.token}`
         },
         body: JSON.stringify({ userId:userData.id }),
       });
@@ -90,6 +92,7 @@ const Profile = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `${userData.token}`
         },
         body: JSON.stringify({ Authorname:Authorname, userid:userData.id }),
       });
@@ -103,7 +106,12 @@ const Profile = () => {
   };
 
   useEffect(() => {
-    fetch(`http://localhost:5000/user/${username}`)
+      fetch(`http://localhost:5000/user/${username}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
       .then(response => response.json())
       .then(data => {
         if (data.length === 0) {
@@ -115,10 +123,15 @@ const Profile = () => {
       })
       .then(userId => {
         if (userId) {
-          fetch(`http://localhost:5000/user/${userId}/posts`)
-            .then(response => response.json())
-            .then(data => setPosts(data))
-            .catch(error => console.error('Error fetching user posts:', error));
+          fetch(`http://localhost:5000/user/${userId}/posts`, {
+            method: 'GET', 
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          })
+          .then(response => response.json())
+          .then(data => setPosts(data))
+          .catch(error => console.error('Error fetching user posts:', error));
         }
       })
       .catch(error => console.error('Error fetching user data:', error));
@@ -137,9 +150,10 @@ const Profile = () => {
           'Content-Type': 'application/json',
         },
       });
+      console.log(UserDataResponse);
       if (UserDataResponse.ok) {
         const userDataServer = await UserDataResponse.json();
-        if(PostPrice > userDataServer[0].balance){
+        if(PostPrice > userDataServer.balance){
           showAlert(setAlert, setAlertVisible, 'error', 'Insufficient balance!');
           return;
         }
@@ -147,11 +161,11 @@ const Profile = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `${userData.token}`
           },
           body: JSON.stringify({ username:userData.username }),
         });
         if (PurchaseResponse.ok) {
-
           const updatedPost = await PurchaseResponse.json();
           setPosts(prevPosts => prevPosts.map(post => post.id === PostID ? updatedPost : post));
           window.dispatchEvent(new Event('userDataUpdate'));
@@ -217,6 +231,7 @@ const Profile = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `${userData.token}`
         },
         body: JSON.stringify({ PostId:PostId, userId:userData.id, Filename }),
       });
@@ -229,6 +244,10 @@ const Profile = () => {
         document.body.appendChild(link);
         link.click();
         link.parentNode.removeChild(link);
+      } else if(response.status === 401) {
+        showAlert(setAlert, setAlertVisible, 'error', 'You do not have access to this content.');
+      } else if(response.status === 404) {
+        showAlert(setAlert, setAlertVisible, 'error', 'File not found.');
       }
     } catch (error) {
       console.error('Error downloading content:', error);
@@ -260,7 +279,6 @@ const Profile = () => {
         </div>
       </div>
       
-
       <div className={ProfileStyle.ProfilePosts}>
         <h2>Posts</h2>
         {posts.length === 0 ? (
@@ -269,7 +287,7 @@ const Profile = () => {
             </div>
         ) : (
           posts.map(post => (
-            <div key={post.id} className={`${PostModel.Post} ${getClassName(post.contentType)}`}>
+            <section id={post.id} key={post.id} className={`${PostModel.Post} ${getClassName(post.contentType)}`}>
               <div className={PostModel.PostHeader}>
                 <h2 className={PostModel.PostTitle}>{post.title}</h2>
                 <span className={PostModel.PostTimestamp}>
@@ -298,7 +316,7 @@ const Profile = () => {
                                   <p>{post.description}</p>
                                 </div>
                               </div>
-                              {post.attachments.length > 0 ? (
+                              {post.AttachmentCount > 0 ? (
                                 <div className={PostModel.ContentPost}>
                                   <p className={PostModel.ContentTitle}>
                                     Post Attachments
@@ -343,7 +361,7 @@ const Profile = () => {
                                 <p>{post.description}</p>
                               </div>
                             </div>
-                            {post.attachments.length > 0 ? (
+                            {post.AttachmentCount > 0 ? (
                               <div className={PostModel.ContentPost}>
                                 <p className={PostModel.ContentTitle}>
                                   Post Attachments
@@ -387,7 +405,7 @@ const Profile = () => {
                           <p>{post.description}</p>
                         </div>
                       </div>
-                      {post.attachments.length > 0 ? (
+                      {post.AttachmentCount > 0 ? (
                         <div className={PostModel.ContentPost}>
                           <p className={PostModel.ContentTitle}>
                             Post Attachments
@@ -417,7 +435,7 @@ const Profile = () => {
                     );
                 }
               })()}
-            </div>
+            </section>
           ))
         )}
       </div>

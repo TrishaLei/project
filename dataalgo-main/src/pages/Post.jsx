@@ -1,209 +1,422 @@
-import { useState,  useEffect } from "react";
-import { Form, Link, useNavigate } from "react-router-dom";
-import { Alert } from 'antd';
-import PostStyle from "../assets/styles/post.module.css";
-import FormStyle from "../assets/styles/form.module.css";
-import { GetCookie, RemoveCookie } from '../components/auth/cookies.jsx';
+import React, { useState, useEffect } from 'react';
+import { Link, useParams, useNavigate} from 'react-router-dom';
+import { format, formatDistanceToNow, differenceInYears } from 'date-fns';
+import UpArrow from "../assets/images/arrow-big-up.svg";
+import DownArrow from "../assets/images/arrow-big-down.svg";
+import PostStyle from '../assets/styles/post.module.css';
+import PostModel from "../assets/styles/PostModel.module.css";
+import { GetCookie } from '../components/auth/cookies.jsx';
 import AlertComponent from '../components/Alert/AlertComponent.jsx';
 import { showAlert } from '../components/Alert/ShowAlert.js';
 
+import Modal from '../components/Modal/Modal.jsx';
+import ModalStyle from "../assets/styles/modal.module.css";
+
 const Post = () => {
-  const [title, setTitle] = useState('');
-  const [tags, setTags] = useState('');
-  const [description, setDescription] = useState('');
-  const [isPaid, setIsPaid] = useState(false);
-  const [contentType, setContentType] = useState(0);
-  const [showPriceInput, setShowPriceInput] = useState(false);
-  const [price, setPrice] = useState(0.0);
+  const { postid } = useParams();
   const [alert, setAlert] = useState({ type: '', message: '' });
   const [alertVisible, setAlertVisible] = useState(false);
-  const [attachments, setAttachments] = useState([]);
-  const [hasAttachment, setHasAttachments] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalContent, setModalContent] = useState(null);
+  const [showAttachments, setShowAttachments] = useState({});
+  const [post, setPost] = useState([]);
+
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const userData = GetCookie('data');
-    if (!userData) {
-      navigate('/');
-    }
-  }, [navigate]);
+  const userData = GetCookie('data');
+  const username = userData ? userData.username : null;
+  const userid = userData ? userData.id : null;
+  const usertoken = userData ? userData.token : null;
 
-  const handlePaidChange = () => {
-    setIsPaid(!isPaid);
-    setShowPriceInput(false);
-    setContentType(0);
-  };
-
-  const handleSubscriptionClick = () => {
-    setShowPriceInput(false);
-    setContentType(1);
-  };
-
-  const handlePriceBaseClick = () => {
-    setShowPriceInput(true);
-    setContentType(2);
-  };
-
-  const handleAttachmentsChange = (e) => {
-    setAttachments(e.target.files);
-    setHasAttachments(true);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const userData = GetCookie('data');
-    if (!userData) {
-      navigate('/');
-      return;
-    }
-    const username = userData.username;
-    const usertoken = userData.token;
-    const PostDate = new Date().toISOString();
+  const handleUpvote = async (postId) => {
     try {
-      const formData = new FormData();
-      formData.append('usertoken', usertoken);
-      formData.append('username', username);
-      formData.append('title', title);
-      formData.append('tags', tags);  
-      formData.append('description', description);
-      formData.append('contentType', contentType);
-      formData.append('price', price);
-      formData.append('hasAttachments', hasAttachment);
-      formData.append('PostDate', PostDate);
-
-
-      if (attachments.length > 0) {
-        for (let i = 0; i < attachments.length; i++) {
-          formData.append('attachments', attachments[i]);
-        }
+      const userData = GetCookie('data');
+      if (!userData) {
+        showAlert(setAlert, setAlertVisible, 'error', 'Please login first!');
+        return;
       }
-
-      const response = await fetch('http://localhost:5000/publish', {
+      const response = await fetch(`http://localhost:5000/posts/${postId}/upvote`, {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `${userData.token}`
+        },
+        body: JSON.stringify({ userId:userData.id }),
       });
       if (response.ok) {
-        showAlert(setAlert, setAlertVisible, 'success', 'Successfuly published!');
-        setTimeout(() => {
-          navigate('/');
-        }, 1000);
-      } else if(response.status === 401) {
-        showAlert(setAlert, setAlertVisible, 'error', 'Invalid Post. Please try again.');
-      }else if(response.status === 500){
-        setAlertVisible(true);
-        showAlert(setAlert, setAlertVisible, 'error', 'Your account has been logged in from another device. Please login again. You will be redirected to login page in 5 seconds.');
-        RemoveCookie('data');
-        setTimeout(() => {
-          setAlertVisible(false);
-          navigate('/login');
-        }, 5000);
-      }else{
-        showAlert(setAlert, setAlertVisible, 'error', 'Server error. Please try again later.');
+        const updatedPost = await response.json();
+        setPost(updatedPost);
       }
     } catch (error) {
-      console.error('Error:', error);
-      showAlert(setAlert, setAlertVisible, 'error', 'Server error. Please try again later.');
+      console.error('Error upvoting post:', error);
     }
   };
 
+  const handleDownvote = async (postId) => {
+    try {
+      const userData = GetCookie('data');
+      if (!userData) {
+        showAlert(setAlert, setAlertVisible, 'error', 'Please login first!');
+        return;
+      }
+      const response = await fetch(`http://localhost:5000/posts/${postId}/downvote`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `${userData.token}`
+        },
+        body: JSON.stringify({ userId:userData.id }),
+      });
+      if (response.ok) {
+        const updatedPost = await response.json();
+        setPost(updatedPost);
+      }
+    } catch (error) {
+      console.error('Error downvoting post:', error);
+    }
+  };
+
+
+  useEffect(() => {
+      fetch(`http://localhost:5000/post/${postid}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.length === 0) {
+          navigate('/');
+        } else {
+          console.log(data);
+          setPost(data);
+        }
+      })
+      .catch(error => console.error('Error fetching user data:', error));
+  }, [postid]);
+
+  const handlePurchase = async (PostID, PostPrice) => {
+    try {
+      const userData = GetCookie('data');
+      if (!userData) {
+        showAlert(setAlert, setAlertVisible, 'error', 'Please login first!');
+        return;
+      }
+      const UserDataResponse = await fetch(`http://localhost:5000/user/${userData.username}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      console.log(UserDataResponse);
+      if (UserDataResponse.ok) {
+        const userDataServer = await UserDataResponse.json();
+        if(PostPrice > userDataServer.balance){
+          showAlert(setAlert, setAlertVisible, 'error', 'Insufficient balance!');
+          return;
+        }
+        const PurchaseResponse = await fetch(`http://localhost:5000/purchase/${PostID}/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `${userData.token}`
+          },
+          body: JSON.stringify({ username:userData.username }),
+        });
+        if (PurchaseResponse.ok) {
+          const updatedPost = await PurchaseResponse.json();
+          setPost(updatedPost);
+          window.dispatchEvent(new Event('userDataUpdate'));
+          showAlert(setAlert, setAlertVisible, 'success', 'Purchase successful!');
+          closeModal();
+        }
+      }
+    } catch (error) {
+      console.error('Error downvoting post:', error);
+    }
+  };
+
+  const handleSubscribe = async (AuthorName) => {
+    try {
+      navigate('/profile/' + AuthorName);
+    } catch (error) {
+      console.error('Error downvoting post:', error);
+    }
+  };
+
+  const getClassName = (contentType) => {
+    switch (contentType) {
+      case 1:
+        return PostModel.PostSubscription;
+      case 2:
+        return PostModel.PostPremium;
+      default:
+        return '';
+    }
+  };
+
+  const openModal = (PostPrice, ContentType, AuthorId, AuthorName, PostId, PostTitle, PostTags, ModalTitle, ModalContent) => {
+    const userData = GetCookie('data');
+    if (!userData) {
+      showAlert(setAlert, setAlertVisible, 'error', 'Please login first!');
+      return;
+    }
+    setModalContent({PostPrice, ContentType, AuthorId, AuthorName, PostId, PostTitle, PostTags, ModalTitle, ModalContent});
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setModalContent(null);
+  };
+
+
+  const PremiumContent = (PostPrice, ContentType, AuthorId, AuthorName, PostId, PostTitle, PostTags) => {
+    openModal(PostPrice, ContentType, AuthorId, AuthorName, PostId, PostTitle, PostTags, 'Purchase', `Are you sure you want to purchase this content for $${PostPrice}?`);
+  };
+
+  const SubscribeContent = (ContentType, AuthorId, AuthorName, PostId, PostTitle, PostTags) => {
+    openModal(0, ContentType, AuthorId, AuthorName, PostId, PostTitle, PostTags, 'Subscription', `Are you sure you want to subscribe to ${AuthorName}?`);
+  };
+
+  const toggleAttachments = (postId) => {
+    setShowAttachments(prevState => ({
+      ...prevState,
+      [postId]: !prevState[postId]
+    }));
+  };
+
+  const DownloadContent = async (PostId, Filename) => {
+    try {
+      const userData = GetCookie('data');
+      if (!userData) {
+        showAlert(setAlert, setAlertVisible, 'error', 'Please login first!');
+        return;
+      }
+      const response = await fetch(`http://localhost:5000/posts/download`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `${userData.token}`
+        },
+        body: JSON.stringify({ PostId:PostId, userId:userData.id, Filename }),
+      });
+      if (response.ok) {
+        const data = await response.blob();
+        const url = window.URL.createObjectURL(new Blob([data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', Filename);
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode.removeChild(link);
+      } else if(response.status === 401) {
+        showAlert(setAlert, setAlertVisible, 'error', 'You do not have access to this content.');
+      } else if(response.status === 404) {
+        showAlert(setAlert, setAlertVisible, 'error', 'File not found.');
+      }
+    } catch (error) {
+      console.error('Error downloading content:', error);
+    }
+  };
+
+  if (!postid) {
+    return <p>Loading...</p>;
+  }
 
   return (
     <>
-      <AlertComponent alert={alert} setAlert={setAlert} alertVisible={alertVisible} />
-      <main className={PostStyle.Wrapper}>
-        <section className={FormStyle.PostFormContainer}>
-          <h2>Create a new post</h2>
-          <form onSubmit={handleSubmit}>
-            <div className={FormStyle.FormGroup}>
-              <label htmlFor="title">Title</label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                placeholder="Enter post title"
-                required
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-            </div>
-
-            <div className={FormStyle.FormGroup}>
-              <label htmlFor="tags">Tags</label>
-              <input
-                type="text"
-                id="tags"
-                name="tags"
-                placeholder="Enter tags separated by commas"
-                required
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-              />
-            </div>
-
-            <div className={FormStyle.FormGroup}>
-              <label htmlFor="attachments">Attachments</label>
-              <input type="file" id="attachments" name="attachments" multiple onChange={handleAttachmentsChange} />
-            </div>
-
-            <div className={FormStyle.FormGroup}>
-              <label htmlFor="description">Description</label>
-              <textarea
-                classname={FormStyle.TextArea}
-                id="description"
-                name="description"
-                placeholder="Write your post description here..."
-                required
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-
-            <div className={FormStyle.FormGroup}>
-              <div className={FormStyle.CheckBox}>
-                <p htmlFor="isPaid">Paid Content</p>
-                <input
-                  type="checkbox"
-                  id="isPaid"
-                  name="isPaid"
-                  onChange={handlePaidChange}
-                />
+    <AlertComponent alert={alert} setAlert={setAlert} alertVisible={alertVisible} />
+    <div className={PostStyle.Wrapper}>
+      <div id={post.id} key={post.id} className={`${PostModel.Post} ${getClassName(post.contentType)}`}>
+        <div className={PostModel.PostHeader}>
+          <h2 className={PostModel.PostTitle}>{post.title}</h2>
+          <span className={PostModel.PostTimestamp}>
+          {post.PostDate && !isNaN(Date.parse(post.PostDate)) ? (
+            differenceInYears(new Date(), new Date(Date.parse(post.PostDate))) >= 1
+              ? format(new Date(Date.parse(post.PostDate)), 'MMMM d, yyyy')
+              : formatDistanceToNow(new Date(Date.parse(post.PostDate)), { addSuffix: true })
+          ) : (
+            'Invalid date'
+          )}
+          </span>
+        </div>
+        <p className={PostModel.PostTags}>Tags: {post.tags}</p>
+        <p className={PostModel.PostAuthor}>
+          Posted by
+          <img src={ `http://localhost:5000/avatar/${post.userId}`}  className={PostModel.PostAuthorIcon}alt="User" />
+          <Link to={`/profile/${post.username}`} className={PostModel.PostAuthorName}>
+            <span>{post.username}</span>
+          </Link>
+        </p>
+        {(() => {
+          switch (post.contentType) {
+            case 1:
+              return (
+                <>
+                  {post.isSubscribed || (post.userId == userid) ? (
+                      <>
+                        <div className={PostModel.Post}>
+                          <div className={PostModel.PostActions}>  
+                            <p>{post.description}</p>
+                          </div>
+                        </div>
+                        {post.AttachmentCount > 0 ? (
+                          <div className={PostModel.ContentPost}>
+                            <p className={PostModel.ContentTitle}>
+                              Post Attachments
+                            </p>
+                            <div className={PostModel.PostActions}>
+                              <button className={PostModel.ShowMoreButton} onClick={() => toggleAttachments(post.id)}>
+                                {showAttachments[post.id] ? 'Hide Attachments' : 'Show Attachments'}
+                              </button>
+                            </div>
+                            {showAttachments[post.id] && JSON.parse(post.attachments).map((attachment, index) => (
+                              <button key={index} className={PostModel.PostDownloadButton} onClick={() => DownloadContent(post.id, attachment)}>
+                                <i className="fas fa-paperclip"></i> {attachment}
+                              </button>
+                            ))}
+                          </div>
+                        ) : null}
+                      </>
+                  ) : (
+                    <div className={PostModel.LockedContainer}>
+                      <p>This content is locked. Please subscribe to access.</p>
+                      <button className={PostModel.PostActionsButton} onClick={() => SubscribeContent(post.contentType, post.userId, post.username, post.id, post.title, post.tags)}>Subscribe</button>
+                    </div>
+                  )}
+                  <div className={PostModel.PostActions}>
+                  <button onClick={() => handleUpvote(post.id)} className={`${PostModel.PostActionsButton} ${PostModel.ButtonVote} ${post.upvotes.includes(userid) ? PostModel.ButtonVoted : ''}`}>
+                    <img src={UpArrow} alt="Upvote" />
+                  </button>
+                  <p>{post.upvotes.length - post.downvotes.length}</p>
+                  <button onClick={() => handleDownvote(post.id)} className={`${PostModel.PostActionsButton} ${PostModel.ButtonVote} ${post.downvotes.includes(userid) ? PostModel.ButtonVoted : ''}`}>
+                    <img src={DownArrow} alt="Downvote" />
+                  </button>
+                </div>
+                </>
+              );
+            case 2:
+              return (
+                <>
+                  {post.purchase.includes(userid) || (post.userId == userid) ? (
+                    <>
+                      <div className={PostModel.Post}>
+                        <div className={PostModel.PostActions}>  
+                          <p>{post.description}</p>
+                        </div>
+                      </div>
+                      {post.AttachmentCount > 0 ? (
+                        <div className={PostModel.ContentPost}>
+                          <p className={PostModel.ContentTitle}>
+                            Post Attachments
+                          </p>
+                          <div className={PostModel.PostActions}>
+                            <button className={PostModel.ShowMoreButton} onClick={() => toggleAttachments(post.id)}>
+                              {showAttachments[post.id] ? 'Hide Attachments' : 'Show Attachments'}
+                            </button>
+                          </div>
+                          {showAttachments[post.id] && JSON.parse(post.attachments).map((attachment, index) => (
+                            <button key={index} className={PostModel.PostDownloadButton} onClick={() => DownloadContent(post.id, attachment)}>
+                              <i className="fas fa-paperclip"></i> {attachment}
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
+                    </>
+                  ) : (
+                    <div className={PostModel.LockedContainer}>
+                      <p>This content is locked. Please purchase to access.</p>
+                      <p className={PostModel.PostPrice}>${post.price.toFixed(2)}</p>
+                      <button className={PostModel.PostActionsButton} onClick={() => PremiumContent(post.price.toFixed(2), post.contentType, post.userId, post.username, post.id, post.title, post.tags)}>Buy Now</button>
+                    </div>
+                  )}
+                  <div className={PostModel.PostActions}>
+                    <button onClick={() => handleUpvote(post.id)} className={`${PostModel.PostActionsButton} ${PostModel.ButtonVote} ${post.upvotes.includes(userid) ? PostModel.ButtonVoted : ''}`}>
+                      <img src={UpArrow} alt="Upvote" />
+                    </button>
+                    <p>{post.upvotes.length - post.downvotes.length}</p>
+                    <button onClick={() => handleDownvote(post.id)} className={`${PostModel.PostActionsButton} ${PostModel.ButtonVote} ${post.downvotes.includes(userid) ? PostModel.ButtonVoted : ''}`}>
+                      <img src={DownArrow} alt="Downvote" />
+                    </button>
+                  </div>
+                </>
+              );
+            default:
+              return (
+                <>
+                <div className={PostModel.Post}>
+                  <div className={PostModel.PostActions}>  
+                    <p>{post.description}</p>
+                  </div>
+                </div>
+                {post.AttachmentCount > 0 ? (
+                  <div className={PostModel.ContentPost}>
+                    <p className={PostModel.ContentTitle}>
+                      Post Attachments
+                    </p>
+                    <div className={PostModel.PostActions}>
+                      <button className={PostModel.ShowMoreButton} onClick={() => toggleAttachments(post.id)}>
+                        {showAttachments[post.id] ? 'Hide Attachments' : 'Show Attachments'}
+                      </button>
+                    </div>
+                    {showAttachments[post.id] && JSON.parse(post.attachments).map((attachment, index) => (
+                      <button key={index} className={PostModel.PostDownloadButton} onClick={() => DownloadContent(post.id, attachment)}>
+                        <i className="fas fa-paperclip"></i> {attachment}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+                <div className={PostModel.PostActions}>
+                  <button onClick={() => handleUpvote(post.id)} className={`${PostModel.PostActionsButton} ${PostModel.ButtonVote} ${post.upvotes && post.upvotes.includes(userid) ? PostModel.ButtonVoted : ''}`}>
+                    <img src={UpArrow} alt="Upvote" />
+                  </button>
+                  <p>{post.upvotes && post.upvotes.length - post.downvotes.length}</p>
+                  <button onClick={() => handleDownvote(post.id)} className={`${PostModel.PostActionsButton} ${PostModel.ButtonVote} ${post.downvotes && post.downvotes.includes(userid) ? PostModel.ButtonVoted : ''}`}>
+                    <img src={DownArrow} alt="Downvote" />
+                  </button>
+                </div>
+                </>
+              );
+          }
+        })()}
+      </div>
+    </div>
+    <Modal show={isModalOpen} onClose={closeModal}>
+          <h2>{modalContent?.ModalTitle}</h2>
+          <div>
+            <p>{modalContent?.ModalContent}</p>
+            <div className={ModalStyle.Post}>
+              <p className={ModalStyle.ModalTitle}>{modalContent?.PostTitle}</p>
+              <div className={ModalStyle.ModalAuthor}>
+                <p className={ModalStyle.ModalTitle}>
+                  Posted by: 
+                  <img src={ `http://localhost:5000/avatar/${modalContent?.AuthorId}`}  style={{margin: '0 0.25rem', width: '15px', height: '15px', borderRadius: '50%', overflow: 'hidden', display: 'inline-flex', justifyContent: 'center', alignItems: 'center'}} alt="User" />
+                  <span className={ModalStyle.Bold}>{modalContent?.AuthorName}</span>
+                </p>
               </div>
             </div>
-
-            {isPaid && (
-              <div className={FormStyle.SubPriceButton}>
-                <button type="button" onClick={handleSubscriptionClick}>
-                  Subscription
-                </button>
-                <button type="button" onClick={handlePriceBaseClick}>
-                  Price base
-                </button>
-              </div>
-            )}
-
-            {showPriceInput && (
-              <div className={FormStyle.FormGroup}>
-                <label htmlFor="price">Price</label>
-                <input
-                  type="number"
-                  id="price"
-                  name="price"
-                  placeholder="Enter price"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                />
-              </div>
-            )}
-
-            <button type="submit" className={FormStyle.SubmitBtn}>
-              Publish
-            </button>
-          </form>
-        </section>
-        <footer className={PostStyle.Footer}>
-            <p><Link to="/">EduHub</Link> &copy; 2024. All rights reserved.</p>
-        </footer>
-      </main>
+          </div>
+          {(() => {
+            switch (modalContent?.ContentType) {
+              case 1:
+                return (
+                  <div className={ModalStyle.PostActions}>
+                    <button className={ModalStyle.ModalButton} onClick={() => handleSubscribe(modalContent?.AuthorName)}>Yes</button><button className={ModalStyle.ModalButton} onClick={closeModal}>No</button>
+                  </div>
+                );
+              case 2:
+                return(
+                  <div className={ModalStyle.PostActions}>
+                    <button className={ModalStyle.ModalButton} onClick={() => handlePurchase(modalContent?.PostId, modalContent?.PostPrice)}>Purchase</button><button className={ModalStyle.ModalButton} onClick={closeModal}>Cancel</button>
+                  </div>
+                );
+              default:
+                return null;
+            }
+          })()}
+      </Modal>
     </>
   );
 };

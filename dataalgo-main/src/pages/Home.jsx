@@ -43,6 +43,7 @@ const Home = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `${userData.token}`
         },
         body: JSON.stringify({ userId:userData.id }),
       });
@@ -66,6 +67,7 @@ const Home = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `${userData.token}`
         },
         body: JSON.stringify({ userId:userData.id }),
       });
@@ -121,6 +123,7 @@ const Home = () => {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `${userData.token}`
         },
       });
       if (UserDataResponse.ok) {
@@ -133,6 +136,7 @@ const Home = () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `${userData.token}`
           },
           body: JSON.stringify({ username:userData.username }),
         });
@@ -195,6 +199,7 @@ const Home = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `${userData.token}`
         },
         body: JSON.stringify({ PostId:PostId, userId:userData.id, Filename }),
       });
@@ -207,6 +212,10 @@ const Home = () => {
         document.body.appendChild(link);
         link.click();
         link.parentNode.removeChild(link);
+      } else if(response.status === 401) {
+        showAlert(setAlert, setAlertVisible, 'error', 'You do not have access to this content.');
+      } else if(response.status === 404) {
+        showAlert(setAlert, setAlertVisible, 'error', 'File not found.');
       }
     } catch (error) {
       console.error('Error downloading content:', error);
@@ -265,7 +274,7 @@ const Home = () => {
                                   <p>{post.description}</p>
                                 </div>
                               </div>
-                              {post.attachments.length > 0 ? (
+                              {post.AttachmentCount > 0 ? (
                                 <div className={PostModel.ContentPost}>
                                   <p className={PostModel.ContentTitle}>
                                     Post Attachments
@@ -310,7 +319,7 @@ const Home = () => {
                                   <p>{post.description}</p>
                                 </div>
                               </div>
-                              {post.attachments.length > 0 ? (
+                              {post.AttachmentCount > 0 ? (
                                 <div className={PostModel.ContentPost}>
                                   <p className={PostModel.ContentTitle}>
                                     Post Attachments
@@ -354,7 +363,7 @@ const Home = () => {
                             <p>{post.description}</p>
                           </div>
                         </div>
-                        {post.attachments.length > 0 ? (
+                        {post.AttachmentCount > 0 ? (
                           <div className={PostModel.ContentPost}>
                             <p className={PostModel.ContentTitle}>
                               Post Attachments

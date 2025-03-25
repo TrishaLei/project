@@ -1,3 +1,4 @@
+const jwt = require('jsonwebtoken');
 const express = require('express');
 const multer = require('multer');
 const mysql = require('mysql');
@@ -11,6 +12,7 @@ const port = 5000;
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
+require('dotenv').config();
 
 // Attachment Upload Path
 const storage = multer.diskStorage({
@@ -43,13 +45,12 @@ db.connect(err => {
 // -- Queries
 const SelectUser_Post = 'SELECT posts.id,posts.title,posts.tags,posts.description,posts.attachments,posts.upvotes,posts.downvotes,posts.hasAttachments,posts.contentType, posts.price, posts.purchase, posts.PostDate, users.id AS userId, users.subscribers, users.username, users.avatar, IFNULL(JSON_LENGTH(posts.attachments), 0) AS AttachmentCount, IFNULL(JSON_LENGTH(posts.purchase), 0) AS PurchaseCount, IFNULL(JSON_LENGTH(posts.upvotes), 0) AS TotalUpVotes, IFNULL(JSON_LENGTH(posts.downvotes), 0) AS TotalDownVotes FROM posts JOIN users ON posts.userid = users.id WHERE posts.userid = ? ORDER BY (TotalUpVotes - TotalDownVotes) DESC';
 const Select_Post = 'SELECT posts.id,posts.title,posts.tags,posts.description,posts.attachments,posts.upvotes,posts.downvotes,posts.hasAttachments,posts.contentType, posts.price, posts.purchase, posts.PostDate, users.id AS userId, users.subscribers, users.username, users.avatar, IFNULL(JSON_LENGTH(posts.attachments), 0) AS AttachmentCount, IFNULL(JSON_LENGTH(posts.purchase), 0) AS PurchaseCount, IFNULL(JSON_LENGTH(posts.upvotes), 0) AS TotalUpVotes, IFNULL(JSON_LENGTH(posts.downvotes), 0) AS TotalDownVotes FROM posts JOIN users ON posts.userid = users.id WHERE posts.id = ? ORDER BY (TotalUpVotes - TotalDownVotes) DESC';
+const Select_Post_History = 'SELECT posts.id,posts.title,posts.tags,posts.description,posts.attachments,posts.upvotes,posts.downvotes,posts.hasAttachments,posts.contentType, posts.price, posts.purchase, posts.PostDate, users.id AS userId, users.subscribers, users.username, users.avatar, IFNULL(JSON_LENGTH(posts.attachments), 0) AS AttachmentCount, IFNULL(JSON_LENGTH(posts.purchase), 0) AS PurchaseCount, IFNULL(JSON_LENGTH(posts.upvotes), 0) AS TotalUpVotes, IFNULL(JSON_LENGTH(posts.downvotes), 0) AS TotalDownVotes FROM posts JOIN users ON posts.userid = users.id WHERE JSON_CONTAINS(purchase, ?) ORDER BY (TotalUpVotes - TotalDownVotes) DESC';
 const Show_All_Post = 'SELECT posts.id,posts.title,posts.tags,posts.description,posts.attachments,posts.upvotes,posts.downvotes,posts.hasAttachments,posts.contentType, posts.price, posts.purchase, posts.PostDate, users.id AS userId, users.subscribers, users.username, users.avatar, IFNULL(JSON_LENGTH(posts.attachments), 0) AS AttachmentCount, IFNULL(JSON_LENGTH(posts.purchase), 0) AS PurchaseCount, IFNULL(JSON_LENGTH(posts.upvotes), 0) AS TotalUpVotes, IFNULL(JSON_LENGTH(posts.downvotes), 0) AS TotalDownVotes FROM posts JOIN users ON posts.userid = users.id ORDER BY (TotalUpVotes - TotalDownVotes) DESC';
 
 const UserSelect = 'SELECT id, username, email, balance, subscribers, followers, JoinDate FROM users WHERE username = ?';
 
 // PayPal Components
-const PAYPAL_CLIENT_ID = 'AYKWmFb-WbpwQ33wj5ox1adj-mThTPiLyYQG6431I6FVaepTksSkjfvmJLgE9iRqCpRu5_06ZwOQzBUS';
-const PAYPAL_SECRET = 'ELpYA9IS-ku2cJoFf2yv4dIpTD-iOjGeOJ-wPfsGyUE0nLNw_8Gi7fIPEpNqtZZnG0u_NO20FUzs-des';
 const PAYPAL_API = 'https://api-m.sandbox.paypal.com';
 
 //Verify Transaction | Components
@@ -59,7 +60,7 @@ const getAccessToken = async () => {
     method: 'post',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
-      'Authorization': `Basic ${Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_SECRET}`).toString('base64')}`
+      'Authorization': `Basic ${Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_SECRET}`).toString('base64')}`
     },
     data: 'grant_type=client_credentials'
   });
@@ -78,6 +79,21 @@ const verifyTransaction = async (transactionId) => {
   return response.data;
 };
 
+// Middleware to authenticate access
+const authenticate = (req, res, next) => {
+  const token = req.headers['authorization'];
+
+  if (!token) {
+    return res.status(401).json({ message: 'Access denied. No token provided.' });
+  }
+  try {
+    const verified = jwt.verify(token, process.env.ACCESS_TOKEN);
+    req.user = verified;
+    next();
+  } catch (error) {
+    res.status(400).json({ message: 'Invalid token.', token: token });
+  }
+};
 
 //Topup APIs
 app.post('/user/paypal', async (req, res) => {
@@ -111,7 +127,7 @@ app.post('/user/paypal', async (req, res) => {
 
 // Login/Signup APIs
 app.post('/login', (req, res) => {
-  const { usertoken, username, password } = req.body;
+  const { username, password } = req.body;
   const query = 'SELECT * FROM users WHERE username = ? AND password = ?';
   db.query(query, [username, password], (err, selectResult) => {
     if (err) {
@@ -119,13 +135,14 @@ app.post('/login', (req, res) => {
       return;
     }
     if (selectResult.length > 0) {
-        const userId = selectResult[0].id;
+      const userId = selectResult[0].id;
+        const token = jwt.sign({ userId, username }, process.env.ACCESS_TOKEN, { expiresIn: '7d' });
         const query = 'UPDATE users SET token = ? WHERE username = ? AND password = ?';
-        db.query(query, [usertoken, username, password], (err) => {
+        db.query(query, [token, username, password], (err) => {
           if (err) {
             return res.status(500).send(`Server error: ${err}`);
           }
-          return res.status(200).json({ message: 'Login successfuls', id: userId});
+          return res.status(200).json({ message: 'Login successfuls', id: userId, token:token});
         });
     } else {
       res.status(401).send('Invalid credentials');
@@ -144,14 +161,15 @@ app.post('/signup', (req, res) => {
     if (SelectResult.length > 0) {
       return res.status(400).json({ message: 'Username or email already exists' });
     }
-    const insertUserQuery = 'INSERT INTO users (username, email, password, JoinDate) VALUES (?, ?, ?, ?)';
-    db.query(insertUserQuery, [username, email, password, JoinDate], (err, InsertResult) => {
+    const token = jwt.sign({ userId, username }, process.env.ACCESS_TOKEN, { expiresIn: '7d' });
+    const insertUserQuery = 'INSERT INTO users (token, username, email, password, JoinDate) VALUES (?, ?, ?, ?, ?)';
+    db.query(insertUserQuery, [token, username, email, password, JoinDate], (err, InsertResult) => {
       if (err) {
         console.error('Error:', err);
         return res.status(500).json({ message: 'Server error. Please try again later.', error: err });
       }
       const userId = InsertResult.insertId;
-      res.status(200).json({ message: 'Signup successful!', id: userId });
+      res.status(200).json({ message: 'Signup successful!', id: userId, token: token });
     });
   });
 });
@@ -186,8 +204,25 @@ app.get('/user/:username', (req, res) => {
   });
 });
 
+app.get('/purchased/:userid', authenticate, (req, res) => {
+  const { userid } = req.params;
+  const query = 'SELECT * FROM posts WHERE JSON_CONTAINS(purchase, ?)' ;
+  db.query(Select_Post_History, userid, (err, results) => {
+    if (err) {
+      console.error('Error:', err);
+      return res.status(500).json({ message: 'Server error. Please try again later.' });
+    }
+    res.json(results.map(post => ({
+      ...post,
+      upvotes: JSON.parse(post.upvotes || '[]'),
+      downvotes: JSON.parse(post.downvotes || '[]'),
+      purchase: JSON.parse(post.purchase || '[]'),
+      subscribers: JSON.parse(post.subscribers || '[]')
+    })));
+  });
+});
 
-app.post('/user/follow/', (req, res) => {
+app.post('/user/follow/', authenticate, (req, res) => {
   const { Authorname, userid } = req.body;
   db.query('SELECT followers, id FROM users WHERE username = ?', [Authorname], (err, AuthorResults) => {
     if (err) {
@@ -299,7 +334,7 @@ app.post('/publish', upload.array('attachments'), (req, res) => {
   });
 });
 
-app.post('/posts/download', (req, res) => {
+app.post('/posts/download', authenticate, (req, res) => {
   const { PostId, userId, Filename } = req.body;
   db.query('SELECT purchase, userid FROM posts WHERE id = ?', [PostId], (err, results) => {
     if (err) {
@@ -325,6 +360,23 @@ app.post('/posts/download', (req, res) => {
   });
 });
 
+app.get('/post/:id', (req, res) => {
+  const postId = parseInt(req.params.id);
+  db.query(Select_Post, [postId],(err, results) => {
+    if (err) {
+      console.error('Error:', err);
+      return res.status(500).json({ message: 'Server error. Please try again later.' });
+    }
+    res.json({
+      ...results[0],
+      upvotes: JSON.parse(results[0].upvotes || '[]'),
+      downvotes: JSON.parse(results[0].downvotes || '[]'),
+      purchase: JSON.parse(results[0].purchase || '[]'),
+      subscribers: JSON.parse(results[0].subscribers || '[]')
+    });
+  });
+});
+
 app.get('/user/:id/posts', (req, res) => {
   const postId = parseInt(req.params.id);
   db.query(SelectUser_Post, [postId],(err, results) => {
@@ -340,7 +392,7 @@ app.get('/user/:id/posts', (req, res) => {
   });
 });
 
-app.post('/posts/:id/upvote', (req, res) => {
+app.post('/posts/:id/upvote', authenticate, (req, res) => {
   const postId = parseInt(req.params.id);
   const { userId } = req.body;
 
@@ -408,7 +460,7 @@ app.post('/posts/:id/upvote', (req, res) => {
   });
 });
 
-app.post('/posts/:id/downvote', (req, res) => {
+app.post('/posts/:id/downvote', authenticate, (req, res) => {
   const postId = parseInt(req.params.id);
   const { userId } = req.body;
 
@@ -476,7 +528,7 @@ app.post('/posts/:id/downvote', (req, res) => {
   });
 });
 
-app.post('/purchase/:postid', (req, res) => {
+app.post('/purchase/:postid', authenticate, (req, res) => {
   const { postid } = req.params;
   const { username } = req.body;
   const CheckUser = 'SELECT * FROM users WHERE username = ?';
