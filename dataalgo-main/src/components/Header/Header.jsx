@@ -3,12 +3,14 @@ import { Link } from "react-router-dom";
 import { UserOutlined, SettingOutlined, DollarOutlined, LogoutOutlined } from '@ant-design/icons';
 import HeaderStyle from './header.module.css';
 import { GetCookie, RemoveCookie } from '../auth/cookies.jsx';
+import Paypal from '../TopUp/Paypal.jsx';
 
 const Header = () => {
   const [isScrollingDown, setIsScrollingDown] = useState(false);
   const [isDropdownOpen, setisDropdownOpen] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [userDataServer, setuserDataServer] = useState([]);
+  const [isPayPalPopupOpen, setIsPayPalPopupOpen] = useState(false);
 
   const userData = GetCookie('data');
   const username = userData ? userData.username : null;
@@ -21,6 +23,9 @@ const Header = () => {
   };
   const toggleDropdown = () => {
     setisDropdownOpen(!isDropdownOpen);
+  };
+  const togglePayPalPopup = () => {
+    setIsPayPalPopupOpen(!isPayPalPopupOpen);
   };
   useEffect(() => {
       const handleScroll = () => {
@@ -44,7 +49,7 @@ const Header = () => {
     .then(async response => {
       try {
         const data = await response.json();
-        setuserDataServer(data[0]);
+        setuserDataServer(data);
       } catch (error) {
         console.error('Error fetching userdata :', error);
       }
@@ -69,7 +74,7 @@ const Header = () => {
   const menuItems = [
     { label: 'Profile', link: `/profile/${username}`, icon: <UserOutlined /> },
     { label: 'Settings', link: '/settings', icon: <SettingOutlined /> },
-    { label: `$${userDataServer && userDataServer.balance ? (Math.floor(userDataServer.balance * 100) / 100).toFixed(2) : '0.00'}`, link: '/wallet', icon: <DollarOutlined /> },
+    { label: `$${userDataServer && userDataServer.balance ? (Math.floor(userDataServer.balance * 100) / 100).toFixed(2) : '0.00'}`, link: '#', icon: <DollarOutlined />, onClick: togglePayPalPopup },
     { label: 'Logout', onClick: handleLogout, icon: <LogoutOutlined /> }
   ];
 
@@ -122,6 +127,7 @@ const Header = () => {
 
         </nav>
       </header>
+      {isPayPalPopupOpen && <Paypal onClose={togglePayPalPopup} UserId={userid} />}
     </>
   );
 };
