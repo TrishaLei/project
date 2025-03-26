@@ -136,6 +136,7 @@ const Profile = () => {
       }else if(response.status === 401){
         const data = await response.json();
         showAlert(setAlert, setAlertVisible, 'error', data.message);
+        setSubscribeModal(false);
       }else{
         console.error('Error:', response);
       }
