@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+
+// PayPal Components
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import PaypalStyle from './paypal.module.css';
 
 const Paypal = ({ onClose, UserId }) => {
-  const [amount, setAmount] = useState(10); // Default amount
+  const [amount, setAmount] = useState(10); // Default amount to $10
 
   const handleSuccess = async (details) => {
     try {
@@ -47,7 +49,7 @@ const Paypal = ({ onClose, UserId }) => {
             </button>
           ))}
         </div>
-        <PayPalScriptProvider options={{ "client-id": "AYKWmFb-WbpwQ33wj5ox1adj-mThTPiLyYQG6431I6FVaepTksSkjfvmJLgE9iRqCpRu5_06ZwOQzBUS" }}>
+        <PayPalScriptProvider options={{ "client-id": "AYKWmFb-WbpwQ33wj5ox1adj-mThTPiLyYQG6431I6FVaepTksSkjfvmJLgE9iRqCpRu5_06ZwOQzBUS" }}> {/* Client ID from PayPal Developer Portal(Sandbox) */}
           <PayPalButtons
             createOrder={(data, actions) => {
               return actions.order.create({

@@ -45,6 +45,7 @@
 .AmountButton:hover {
   background-color: #005ea6;
 }
+
 .AmountButton:focus {
   outline: none;
   box-shadow: 0 0 0 3px rgba(0, 112, 186, 0.5);

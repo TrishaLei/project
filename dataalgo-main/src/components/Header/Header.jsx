@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from "react-router-dom";
-import { UserOutlined, SettingOutlined, DollarOutlined, LogoutOutlined } from '@ant-design/icons';
-import HeaderStyle from './header.module.css';
+import { Link, useLocation } from "react-router-dom";
+
+// Custom Components
 import { GetCookie, RemoveCookie } from '../auth/cookies.jsx';
+
+//Ant Design Icons
+import { UserOutlined, SettingOutlined, DollarOutlined, LogoutOutlined } from '@ant-design/icons';
+
+//CSS Components for styling
+import HeaderStyle from './header.module.css'; // Header.jsx Main CSS
 import Paypal from '../TopUp/Paypal.jsx';
 
 const Header = () => {
@@ -17,9 +23,18 @@ const Header = () => {
   const userid = userData ? userData.id : null;
   const usertoken = userData ? userData.token : null;
 
+  const location = useLocation(); 
+
   const handleLogout = () => {
     RemoveCookie('data');
-    window.location.reload();
+    const URL = location.pathname;
+    switch (true) {
+      case URL.startsWith("/settings"):
+        return window.location.href = '/';
+      default:
+        return window.location.reload();
+    }
+
   };
   const toggleDropdown = () => {
     setisDropdownOpen(!isDropdownOpen);
@@ -79,12 +94,29 @@ const Header = () => {
     };
   }, [username]);
 
-  const menuItems = [
+  const DropdownItems = [
     { label: 'Profile', link: `/profile/${username}`, icon: <UserOutlined /> },
     { label: 'Settings', link: '/settings', icon: <SettingOutlined /> },
     { label: `$${userDataServer && userDataServer.balance ? (Math.floor(userDataServer.balance * 100) / 100).toFixed(2) : '0.00'}`, link: '#', icon: <DollarOutlined />, onClick: togglePayPalPopup },
     { label: 'Logout', onClick: handleLogout, icon: <LogoutOutlined /> }
   ];
+
+  const HeaderButtons = () => {
+    const URL = location.pathname;
+    switch (true) {
+      case URL === "/":
+        return <Link to="/publish" className={HeaderStyle.Btn}>Publish</Link>;
+      case URL.startsWith("/profile/"):
+        return (
+          <>
+            <Link to="/" className={HeaderStyle.Btn}>Home</Link>
+            <Link to="/publish" className={HeaderStyle.Btn}>Publish</Link>
+          </>
+        );
+      default:
+        return <Link to="/" className={HeaderStyle.Btn}>Home</Link>;
+    }
+  };
 
   return (
     <>
@@ -117,7 +149,7 @@ const Header = () => {
                 />
                 {isDropdownOpen && (
                   <div className={HeaderStyle.menu}>
-                    {menuItems.map((item, index) => (
+                    {DropdownItems.map((item, index) => (
                       <div key={index} className={HeaderStyle.menuItem} onClick={item.onClick}>
                         {item.icon}
                         {item.link ? <Link className={HeaderStyle.menuItemLink} to={item.link}>{item.label}</Link> : item.label}
@@ -126,9 +158,7 @@ const Header = () => {
                   </div>
                 )}
               </div>
-              <Link to="/publish" className={HeaderStyle.Btn}>
-                Publish
-              </Link>
+              {HeaderButtons()}
             </div>
             </>
           )}

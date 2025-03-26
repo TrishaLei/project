@@ -67,7 +67,9 @@
   display: flex;
   align-items: center;
   gap: 5px;
+  padding: 0px 0px 10px 0px;
 }
+
 .PostActions p{
   font-weight: bold;
   padding: 5px 5px;
@@ -182,6 +184,25 @@
 
 .PostDownloadButton i {
   margin-right: 8px;
+}
+
+.ResetButton {
+  background-color: #a2a2a2; 
+  border: none; 
+  color: white; 
+  padding: 10px 20px; 
+  text-align: center; 
+  text-decoration: none;
+  display: inline-block; 
+  font-size: 13px; 
+  margin: 4px 2px; 
+  cursor: pointer; 
+  border-radius: 5px; 
+  transition: background-color 0.3s ease; 
+}
+
+.ResetButton:hover {
+  filter: brightness(90%);
 }
 
 .ShowMoreButton {

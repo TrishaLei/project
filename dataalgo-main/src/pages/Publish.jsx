@@ -1,26 +1,39 @@
 import { useState,  useEffect } from "react";
-import { Form, Link, useNavigate } from "react-router-dom";
-import { Alert } from 'antd';
-import PublishStyle from "../assets/styles/publish.module.css";
-import FormStyle from "../assets/styles/form.module.css";
+import { Link, useNavigate } from "react-router-dom";
+
+// Custom Components
 import { GetCookie, RemoveCookie } from '../components/auth/cookies.jsx';
+
+//CSS Components for styling
+import PublishStyle from "../assets/styles/publish.module.css"; // Publish.jsx Main CSS
+import FormStyle from "../assets/styles/form.module.css";
+
+//Custom alert Components
 import AlertComponent from '../components/Alert/AlertComponent.jsx';
 import { showAlert } from '../components/Alert/ShowAlert.js';
 
 const Publish = () => {
+  //System Variables
+  const navigate = useNavigate();
+
+  //Post Data Variables
   const [title, setTitle] = useState('');
   const [tags, setTags] = useState('');
   const [description, setDescription] = useState('');
-  const [isPaid, setIsPaid] = useState(false);
   const [contentType, setContentType] = useState(0);
-  const [showPriceInput, setShowPriceInput] = useState(false);
   const [price, setPrice] = useState(0.0);
-  const [alert, setAlert] = useState({ type: '', message: '' });
-  const [alertVisible, setAlertVisible] = useState(false);
+  const [isPaid, setIsPaid] = useState(false);
   const [attachments, setAttachments] = useState([]);
   const [hasAttachment, setHasAttachments] = useState(false);
-  const navigate = useNavigate();
 
+  //UI Variables
+  const [showPriceInput, setShowPriceInput] = useState(false);
+
+  // Custom alert variables
+  const [alert, setAlert] = useState({ type: '', message: '' });
+  const [alertVisible, setAlertVisible] = useState(false);
+
+  // Check if user is logged in
   useEffect(() => {
     const userData = GetCookie('data');
     if (!userData) {
@@ -93,7 +106,7 @@ const Publish = () => {
         }, 1000);
       } else if(response.status === 401) {
         showAlert(setAlert, setAlertVisible, 'error', 'Invalid Post. Please try again.');
-      }else if(response.status === 500){
+      }else if(response.status === 511){
         setAlertVisible(true);
         showAlert(setAlert, setAlertVisible, 'error', 'Your account has been logged in from another device. Please login again. You will be redirected to login page in 5 seconds.');
         RemoveCookie('data');
@@ -111,7 +124,6 @@ const Publish = () => {
       showAlert(setAlert, setAlertVisible, 'error', 'Server error. Please try again later.2');
     }
   };
-
 
   return (
     <>

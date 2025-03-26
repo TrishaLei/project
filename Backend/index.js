@@ -45,18 +45,15 @@ db.connect(err => {
 // -- Queries
 const SelectUser_Post = 'SELECT posts.id,posts.title,posts.tags,posts.description,posts.attachments,posts.upvotes,posts.downvotes,posts.hasAttachments,posts.contentType, posts.price, posts.purchase, posts.PostDate, users.id AS userId, users.subscribers, users.username, users.avatar, IFNULL(JSON_LENGTH(posts.attachments), 0) AS AttachmentCount, IFNULL(JSON_LENGTH(posts.purchase), 0) AS PurchaseCount, IFNULL(JSON_LENGTH(posts.upvotes), 0) AS TotalUpVotes, IFNULL(JSON_LENGTH(posts.downvotes), 0) AS TotalDownVotes FROM posts JOIN users ON posts.userid = users.id WHERE posts.userid = ? ORDER BY (TotalUpVotes - TotalDownVotes) DESC';
 const Select_Post = 'SELECT posts.id,posts.title,posts.tags,posts.description,posts.attachments,posts.upvotes,posts.downvotes,posts.hasAttachments,posts.contentType, posts.price, posts.purchase, posts.PostDate, users.id AS userId, users.subscribers, users.username, users.avatar, IFNULL(JSON_LENGTH(posts.attachments), 0) AS AttachmentCount, IFNULL(JSON_LENGTH(posts.purchase), 0) AS PurchaseCount, IFNULL(JSON_LENGTH(posts.upvotes), 0) AS TotalUpVotes, IFNULL(JSON_LENGTH(posts.downvotes), 0) AS TotalDownVotes FROM posts JOIN users ON posts.userid = users.id WHERE posts.id = ? ORDER BY (TotalUpVotes - TotalDownVotes) DESC';
-const Select_Post_History = 'SELECT posts.id,posts.title,posts.tags,posts.description,posts.attachments,posts.upvotes,posts.downvotes,posts.hasAttachments,posts.contentType, posts.price, posts.purchase, posts.PostDate, users.id AS userId, users.subscribers, users.username, users.avatar, IFNULL(JSON_LENGTH(posts.attachments), 0) AS AttachmentCount, IFNULL(JSON_LENGTH(posts.purchase), 0) AS PurchaseCount, IFNULL(JSON_LENGTH(posts.upvotes), 0) AS TotalUpVotes, IFNULL(JSON_LENGTH(posts.downvotes), 0) AS TotalDownVotes FROM posts JOIN users ON posts.userid = users.id WHERE JSON_CONTAINS(purchase, ?) ORDER BY (TotalUpVotes - TotalDownVotes) DESC';
+const Select_Post_Purchase_History = 'SELECT posts.id,posts.title,posts.tags,posts.description,posts.attachments,posts.upvotes,posts.downvotes,posts.hasAttachments,posts.contentType, posts.price, posts.purchase, posts.PostDate, users.id AS userId, users.subscribers, users.username, users.avatar, IFNULL(JSON_LENGTH(posts.attachments), 0) AS AttachmentCount, IFNULL(JSON_LENGTH(posts.purchase), 0) AS PurchaseCount, IFNULL(JSON_LENGTH(posts.upvotes), 0) AS TotalUpVotes, IFNULL(JSON_LENGTH(posts.downvotes), 0) AS TotalDownVotes FROM posts JOIN users ON posts.userid = users.id WHERE JSON_CONTAINS(purchase, ?) ORDER BY (TotalUpVotes - TotalDownVotes) DESC';
 const Show_All_Post = 'SELECT posts.id,posts.title,posts.tags,posts.description,posts.attachments,posts.upvotes,posts.downvotes,posts.hasAttachments,posts.contentType, posts.price, posts.purchase, posts.PostDate, users.id AS userId, users.subscribers, users.username, users.avatar, IFNULL(JSON_LENGTH(posts.attachments), 0) AS AttachmentCount, IFNULL(JSON_LENGTH(posts.purchase), 0) AS PurchaseCount, IFNULL(JSON_LENGTH(posts.upvotes), 0) AS TotalUpVotes, IFNULL(JSON_LENGTH(posts.downvotes), 0) AS TotalDownVotes FROM posts JOIN users ON posts.userid = users.id ORDER BY (TotalUpVotes - TotalDownVotes) DESC';
 
-const UserSelect = 'SELECT id, username, email, balance, subscribers, followers, JoinDate FROM users WHERE username = ?';
-
-// PayPal Components
-const PAYPAL_API = 'https://api-m.sandbox.paypal.com';
+const UserSelect = 'SELECT id, username, email, balance, subscriptionprice, subscribers, followers, JoinDate FROM users WHERE username = ?';
 
 //Verify Transaction | Components
 const getAccessToken = async () => {
   const response = await axios({
-    url: `${PAYPAL_API}/v1/oauth2/token`,
+    url: `https://api-m.sandbox.paypal.com/v1/oauth2/token`,
     method: 'post',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -70,7 +67,7 @@ const getAccessToken = async () => {
 const verifyTransaction = async (transactionId) => {
   const accessToken = await getAccessToken();
   const response = await axios({
-    url: `${PAYPAL_API}/v2/checkout/orders/${transactionId}`,
+    url: `https://api-m.sandbox.paypal.com/v2/checkout/orders/${transactionId}`,
     method: 'get',
     headers: {
       'Authorization': `Bearer ${accessToken}`
@@ -111,7 +108,7 @@ app.post('/user/paypal', async (req, res) => {
       if (results.length === 0) {
         return res.status(404).json({ error: 'User not found' });
       }
-      db.query('UPDATE users SET balance = balance + ? WHERE id = ?', [parseFloat(amount), payerId], (err, Paid) => {
+      db.query('UPDATE users SET balance = balance + ? WHERE id = ?', [parseFloat(amount), payerId], (err) => {
         if (err) {
           console.error('Error updating user balance:', err);
           return res.status(500).send('Server error');
@@ -128,7 +125,7 @@ app.post('/user/paypal', async (req, res) => {
 // Login/Signup APIs
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
-  const query = 'SELECT * FROM users WHERE username = ? AND password = ?';
+  const query = 'SELECT id FROM users WHERE username = ? AND password = ?';
   db.query(query, [username, password], (err, selectResult) => {
     if (err) {
       res.status(500).send('Server error');
@@ -145,14 +142,14 @@ app.post('/login', (req, res) => {
           return res.status(200).json({ message: 'Login successfuls', id: userId, token:token});
         });
     } else {
-      res.status(401).send('Invalid credentials');
+      res.status(511).send('Invalid credentials');
     }
   });
 });
 
 app.post('/signup', (req, res) => {
   const { username, email, password, JoinDate } = req.body;
-  db.query('SELECT * FROM users WHERE username = ? OR email = ?', [username, email], (err, SelectResult) => {
+  db.query('SELECT username FROM users WHERE username = ? OR email = ?', [username, email], (err, SelectResult) => {
     if (err) {
       console.error('Error:', err);
       return res.status(500).json({ message: 'Server error. Please try again later.' });
@@ -178,9 +175,16 @@ app.post('/signup', (req, res) => {
 app.get('/avatar/:id', (req, res) => {
   const { id } = req.params;
   const filePath = __dirname + `/public/avatar/${id}.png`;
+
+  const defaultFilePath = __dirname + `/public/avatar/${Math.floor(Math.random() * 6) + 1}.png`;
+  
   res.sendFile(filePath, err => {
     if (err) {
-      res.status(404).send('Image not found');
+      res.sendFile(defaultFilePath, err => {
+        if (err) {
+          res.status(404).send('Image not found');
+        }
+      });
     }
   });
 });
@@ -204,10 +208,9 @@ app.get('/user/:username', (req, res) => {
   });
 });
 
-app.get('/purchased/:userid', authenticate, (req, res) => {
+app.get('/purchased/:userid', (req, res) => {
   const { userid } = req.params;
-  const query = 'SELECT * FROM posts WHERE JSON_CONTAINS(purchase, ?)' ;
-  db.query(Select_Post_History, userid, (err, results) => {
+  db.query(Select_Post_Purchase_History, userid, (err, results) => {
     if (err) {
       console.error('Error:', err);
       return res.status(500).json({ message: 'Server error. Please try again later.' });
@@ -222,6 +225,78 @@ app.get('/purchased/:userid', authenticate, (req, res) => {
   });
 });
 
+app.get('/subscriptions/:userid', (req, res) => {
+  const { userid } = req.params;
+  const query = 'SELECT id, username, subscribers, followers, JoinDate FROM users WHERE JSON_CONTAINS(subscribers, ?)' ;
+  db.query(query, userid, (err, results) => {
+    if (err) {
+      console.error('Error:', err);
+      return res.status(500).json({ message: 'Server error. Please try again later.' });
+    }
+    res.status(200).json(results);
+  });
+});
+
+app.post('/update/information/:userid', authenticate, (req, res) => {
+  const { userid } = req.params;
+  const { username, email, password, subprice } = req.body;
+  const CheckCredentials = 'SELECT username FROM users WHERE id = ? AND password = ?';
+  db.query(CheckCredentials, [userid, password], (err, CheckCredentialsResult) => {
+    if (err) {
+      console.error('Error:', err);
+      return res.status(500).json({ message: 'Server error. Please try again later.' });
+    }
+    if(CheckCredentialsResult.length > 0){
+      db.query('SELECT * FROM users WHERE username = ?', [username], (err, UsernameCheck) => {
+        if (err) {
+          console.error('Error:', err);
+          return res.status(500).json({ message: 'Server error. Please try again later.' });
+        }
+        if(UsernameCheck.length > 0 && CheckCredentialsResult[0].username !== username){
+          return res.status(401).json({ message: 'Username already exists!' });
+        }
+        db.query('SELECT * FROM users WHERE email = ?', [email], (err, EmailCheck) => {
+          if (err) {
+            console.error('Error:', err);
+            return res.status(500).json({ message: 'Server error. Please try again later.' });
+          }
+          if(EmailCheck.length > 0 && EmailCheck[0].email !== email){
+            return res.status(401).json({ message: 'Email is already registered on different account!' });
+          }
+          db.query('UPDATE users SET username = ?, email = ?, subscriptionprice = ? WHERE id = ?', [username, email, subprice, userid], (err, UpdateCredentialsResult) => {
+            if (err) {
+              console.error('Error:', err);
+              return res.status(500).json({ message: 'Server error. Please try again later.' });
+            }
+            if(UpdateCredentialsResult.changedRows > 0){
+              db.query('SELECT id, username, email, balance, subscriptionprice, subscribers, followers, JoinDate, password FROM users WHERE username = ?', [username], (err, results) => {
+                if (err) {
+                  console.error('Error:', err);
+                  return res.status(500).json({ message: 'Server error. Please try again later.' });
+                }
+                if (results.length > 0) {
+                  const token = jwt.sign({ userid, username }, process.env.ACCESS_TOKEN, { expiresIn: '7d' });  
+                  return res.status(200).json({
+                    ...results[0],
+                    token: token,
+                    followers: JSON.parse(results[0].followers || '[]'),
+                    subscribers: JSON.parse(results[0].subscribers || '[]')
+                  });
+                }else{
+                  return res.status(500).json(JSON.parse('[]'));
+                }
+              });
+            }else{
+              return res.status(500).json({ message: 'Update failed!' });
+            }
+          });
+        });
+      });
+    }else{
+      return res.status(511).json({ message: 'Invalid credentials!' });
+    }
+  });
+});
 app.post('/user/follow/', authenticate, (req, res) => {
   const { Authorname, userid } = req.body;
   db.query('SELECT followers, id FROM users WHERE username = ?', [Authorname], (err, AuthorResults) => {
@@ -292,6 +367,81 @@ app.post('/user/follow/', authenticate, (req, res) => {
   });
 });
 
+app.post('/user/subscribe/', authenticate, (req, res) => {
+  const { Authorname, userid } = req.body;
+  db.query('SELECT subscribers, subscriptionprice, id FROM users WHERE username = ?', [Authorname], (err, AuthorResults) => {
+    if (err || AuthorResults.length === 0) {
+      console.error('Error fetching author:', err);
+      return res.status(500).send('Server error');
+    }
+    const author = AuthorResults;
+    if (author.id === userid) {
+      return res.status(400).json({ message: 'You cannot follow yourself!' });
+    }
+    let subscribers = JSON.parse(author[0].subscribers || '[]');
+    if (!subscribers.includes(userid)) {
+      subscribers.push(userid);
+
+      db.query('SELECT balance FROM users WHERE id = ?', [userid], (err, SubscriberResults) => {
+        if (err || SubscriberResults.length === 0) {
+          console.error('Error fetching subscriber:', err);
+          return res.status(500).send('Server error');
+        }
+        if (author[0].subscriptionprice > SubscriberResults[0].balance) {
+          return res.status(401).json({ message: 'Insufficient balance!' });
+        }
+        db.query('UPDATE users SET balance = balance - ? WHERE id = ?', [author[0].subscriptionprice, userid], (err, SubscriberDeduct) => {
+          if (err) {
+            console.error('Error updating subscriber:');
+            return res.status(500).send('Server error');
+          }
+          db.query('UPDATE users SET balance = balance + ? WHERE username = ?', [author[0].subscriptionprice, Authorname], (err, AuthorAdjusted) => {
+            if (err) {
+              console.error('Error updating author:', err);
+              return res.status(500).send('Server error');
+            }
+            db.query('UPDATE users SET subscribers = ? WHERE username = ?', [JSON.stringify(subscribers), Authorname], (err) => {
+              if (err) {
+                console.error('Error updating subscribers:', err);
+                return res.status(500).send('Server error');
+              }
+              db.query(UserSelect, [Authorname], (err, NewAuthorResults) => {
+                if (err || NewAuthorResults.length === 0) {
+                  console.error('Error fetching updated author:', err);
+                  return res.status(500).send('Server error');
+                }
+                return res.json({
+                  ...NewAuthorResults[0],
+                  followers: JSON.parse(NewAuthorResults[0].followers || '[]'),
+                  subscribers: JSON.parse(NewAuthorResults[0].subscribers || '[]')
+                });
+              });
+            });
+          });
+        });
+      });
+    }else{
+      subscribers = subscribers.filter(id => id !== userid);
+      db.query('UPDATE users SET subscribers = ? WHERE username = ?', [JSON.stringify(subscribers), Authorname], (err, reuls) => {
+        if (err) {
+          console.error('Error updating subscribers:', err);
+          return res.status(500).send('Server error');
+        }
+        db.query(UserSelect, [Authorname], (err, NewAuthorResults) => {
+          if (err || NewAuthorResults.length === 0) {
+            console.error('Error fetching updated author:', err);
+            return res.status(500).send('Server error');
+          }
+          return res.json({
+            ...NewAuthorResults[0],
+            followers: JSON.parse(NewAuthorResults[0].followers || '[]'),
+            subscribers: JSON.parse(NewAuthorResults[0].subscribers || '[]')
+          });
+        });
+      });
+    }
+  });
+});
 
 // Post Related APIs
 app.get('/posts', (req, res) => {
@@ -313,7 +463,7 @@ app.get('/posts', (req, res) => {
 app.post('/publish', upload.array('attachments'), (req, res) => {
   const { usertoken, username, title, tags, description, contentType, price, hasAttachments, PostDate } = req.body;
   const attachments = req.files ? req.files.map(file => file.filename) : [];
-  db.query('SELECT * FROM users WHERE token = ? AND username = ?', [usertoken, username], (err, results) => {
+  db.query('SELECT id FROM users WHERE token = ? AND username = ?', [usertoken, username], (err, results) => {
     if (err) {
       console.error('Error:', err);
       return res.status(500).json({ message: 'Server error. Please try again later.' });
@@ -329,21 +479,21 @@ app.post('/publish', upload.array('attachments'), (req, res) => {
         return res.status(200).json({ message: 'Post published!' });
       });
     }else{
-      return res.status(500).json({ message: 'Invalid token!' });
+      return res.status(511).json({ message: 'Invalid token!' });
     }
   });
 });
 
 app.post('/posts/download', authenticate, (req, res) => {
   const { PostId, userId, Filename } = req.body;
-  db.query('SELECT purchase, userid FROM posts WHERE id = ?', [PostId], (err, results) => {
+  db.query('SELECT purchase, userid, price FROM posts WHERE id = ?', [PostId], (err, results) => {
     if (err) {
       console.error('Error:', err);
       return res.status(500).json({ message: 'Server error. Please try again later.' });
     }
     if (results.length > 0) {
       results[0].purchase = JSON.parse(results[0].purchase || '[]');
-      if(results[0].purchase.includes(userId) || results[0].userid === userId){
+      if(results[0].price === 0 || results[0].purchase.includes(userId) || results[0].userid === userId){
         const { id } = req.params;
         const filePath = __dirname + `/PostAttachments/${Filename}`;
         res.sendFile(filePath, err => {
@@ -362,18 +512,22 @@ app.post('/posts/download', authenticate, (req, res) => {
 
 app.get('/post/:id', (req, res) => {
   const postId = parseInt(req.params.id);
-  db.query(Select_Post, [postId],(err, results) => {
+  db.query(Select_Post, [postId], (err, results) => {
     if (err) {
       console.error('Error:', err);
       return res.status(500).json({ message: 'Server error. Please try again later.' });
     }
-    res.json({
-      ...results[0],
-      upvotes: JSON.parse(results[0].upvotes || '[]'),
-      downvotes: JSON.parse(results[0].downvotes || '[]'),
-      purchase: JSON.parse(results[0].purchase || '[]'),
-      subscribers: JSON.parse(results[0].subscribers || '[]')
-    });
+    if (results.length > 0) {
+      res.json({
+        ...results[0],
+        upvotes: JSON.parse(results[0].upvotes || '[]'),
+        downvotes: JSON.parse(results[0].downvotes || '[]'),
+        purchase: JSON.parse(results[0].purchase || '[]'),
+        subscribers: JSON.parse(results[0].subscribers || '[]')
+      });
+    } else {
+      res.status(404).json({ message: 'Post not found' });
+    }
   });
 });
 
@@ -531,7 +685,7 @@ app.post('/posts/:id/downvote', authenticate, (req, res) => {
 app.post('/purchase/:postid', authenticate, (req, res) => {
   const { postid } = req.params;
   const { username } = req.body;
-  const CheckUser = 'SELECT * FROM users WHERE username = ?';
+  const CheckUser = 'SELECT id, balance FROM users WHERE username = ?';
   const SelectPost = 'SELECT * FROM posts WHERE id = ?';
 
   db.query(CheckUser, [username], (err, UserResults) => {

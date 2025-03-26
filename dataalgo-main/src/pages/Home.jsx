@@ -1,37 +1,70 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from "react-router-dom";
 import { format, formatDistanceToNow, differenceInYears } from 'date-fns';
+
+// Custom Components
+import { GetCookie } from '../components/auth/cookies.jsx';
+
+//Ant Design Components && Icons
+import { Button, Modal } from 'antd';
 import UpArrow from "../assets/images/arrow-big-up.svg";
 import DownArrow from "../assets/images/arrow-big-down.svg";
 
+//CSS Components for styling
+import HomeStyle from "../assets/styles/home.module.css"; // Home.jsx Main CSS
 import PostModel from "../assets/styles/PostModel.module.css";
-import HomeStyle from "../assets/styles/home.module.css";
 import ModalStyle from "../assets/styles/modal.module.css";
 
-import { GetCookie } from '../components/auth/cookies.jsx';
-//Alert Components
+//Custom alert Components
 import AlertComponent from '../components/Alert/AlertComponent.jsx';
 import { showAlert } from '../components/Alert/ShowAlert.js';
-import Modal from '../components/Modal/Modal.jsx';
+
 
 const Home = () => {
-  const [alert, setAlert] = useState({ type: '', message: '' });
-  const [alertVisible, setAlertVisible] = useState(false);
-  const [posts, setPosts] = useState([]);
-  const [LoggedIn, setLoggedIn] = useState(false);
-  const [userId, setUserId] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalContent, setModalContent] = useState(null);
-  const [showAttachments, setShowAttachments] = useState({});
+  // System Variables
   const navigate = useNavigate();
 
-  const toggleAttachments = (postId) => {
-    setShowAttachments(prevState => ({
-      ...prevState,
-      [postId]: !prevState[postId]
-    }));
-  };
+  // User Variables
+  const [LoggedIn, setLoggedIn] = useState(false);
+  const [userId, setUserId] = useState(null);
 
+  // Posts Variables
+  const [posts, setPosts] = useState([]);
+  const [showAttachments, setShowAttachments] = useState({});
+  const [SubscribeModal, setSubscribeModal] = useState(false);
+  const [SubscribeModalContent, setSubscribeModalContent] = useState(null);
+  const [PremiumModal, setPremiumModal] = useState(false);
+  const [PremiumModalContent, setPremiumModalContent] = useState(null);
+
+  // Custom alert variables
+  const [alert, setAlert] = useState({ type: '', message: '' });
+  const [alertVisible, setAlertVisible] = useState(false);
+
+  //Fetch all Post Data
+  useEffect(() => {
+    fetch('http://localhost:5000/posts')
+    .then(async response => {
+      try {
+        const data = await response.json();
+        setPosts(data);
+      } catch (error) {
+        console.error('Error fetching posts :', error);
+      }
+    }).catch(error => {
+      console.error('Error:', error);
+    });
+
+    const userData = GetCookie('data');
+    if (userData) {
+      setLoggedIn(false);
+      setUserId(userData.id);
+    } else {
+      setLoggedIn(true);
+    }
+    
+  }, []);
+
+  //Posts Interactions
   const handleUpvote = async (postId) => {
     try {
       const userData = GetCookie('data');
@@ -80,29 +113,6 @@ const Home = () => {
     }
   };
 
-  useEffect(() => {
-    fetch('http://localhost:5000/posts')
-    .then(async response => {
-      try {
-        const data = await response.json();
-        setPosts(data);
-      } catch (error) {
-        console.error('Error fetching posts :', error);
-      }
-    }).catch(error => {
-      console.error('Error:', error);
-    });
-
-    const userData = GetCookie('data');
-    if (userData) {
-      setLoggedIn(false);
-      setUserId(userData.id);
-    } else {
-      setLoggedIn(true);
-    }
-    
-  }, []);
-
   const handleSubscribe = async (AuthorName) => {
     try {
       navigate('/profile/' + AuthorName);
@@ -110,7 +120,6 @@ const Home = () => {
       console.error('Error downvoting post:', error);
     }
   };
-
 
   const handlePurchase = async (PostID, PostPrice) => {
     try {
@@ -128,7 +137,7 @@ const Home = () => {
       });
       if (UserDataResponse.ok) {
         const userDataServer = await UserDataResponse.json();
-        if(PostPrice > userDataServer[0].balance){
+        if(PostPrice > userDataServer.balance){
           showAlert(setAlert, setAlertVisible, 'error', 'Insufficient balance!');
           return;
         }
@@ -146,46 +155,12 @@ const Home = () => {
           setPosts(prevPosts => prevPosts.map(post => post.id === PostID ? updatedPost : post));
           window.dispatchEvent(new Event('userDataUpdate'));
           showAlert(setAlert, setAlertVisible, 'success', 'Purchase successful!');
-          closeModal();
+          setPremiumModal(false);
         }
       }
     } catch (error) {
       console.error('Error downvoting post:', error);
     }
-  };
-
-  const getClassName = (contentType) => {
-    switch (contentType) {
-      case 1:
-        return PostModel.PostSubscription;
-      case 2:
-        return PostModel.PostPremium;
-      default:
-        return '';
-    }
-  };
-
-  const openModal = (PostPrice, ContentType, AuthorId, AuthorName, PostId, PostTitle, PostTags, ModalTitle, ModalContent) => {
-    const userData = GetCookie('data');
-    if (!userData) {
-      showAlert(setAlert, setAlertVisible, 'error', 'Please login first!');
-      return;
-    }
-    setModalContent({PostPrice, ContentType, AuthorId, AuthorName, PostId, PostTitle, PostTags, ModalTitle, ModalContent});
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setModalContent(null);
-  };
-
-  const PremiumContent = (PostPrice, ContentType, AuthorId, AuthorName, PostId, PostTitle, PostTags) => {
-    openModal(PostPrice, ContentType, AuthorId, AuthorName, PostId, PostTitle, PostTags, 'Purchase', `Are you sure you want to purchase this content for $${PostPrice}?`);
-  };
-
-  const SubscribeContent = (ContentType, AuthorId, AuthorName, PostId, PostTitle, PostTags) => {
-    openModal(0, ContentType, AuthorId, AuthorName, PostId, PostTitle, PostTags, 'Subscription', `Are you sure you want to subscribe to ${AuthorName}?`);
   };
 
   const DownloadContent = async (PostId, Filename) => {
@@ -221,22 +196,63 @@ const Home = () => {
       console.error('Error downloading content:', error);
     }
   };
+
+  const toggleAttachments = (postId) => {
+    setShowAttachments(prevState => ({
+      ...prevState,
+      [postId]: !prevState[postId]
+    }));
+  };
+
+  // Post Content Type (Subscription, Premium, Free)
+  const getClassName = (contentType) => {
+    switch (contentType) {
+      case 1:
+        return PostModel.PostSubscription;
+      case 2:
+        return PostModel.PostPremium;
+      default:
+        return '';
+    }
+  };
+
+  // Modal data handlers
+  const SubscribeContent = (AuthorId, AuthorName, PostId, PostTitle, PostTags) => {
+    const userData = GetCookie('data');
+    if (!userData) {
+      showAlert(setAlert, setAlertVisible, 'error', 'Please login first!');
+      return;
+    }
+    setSubscribeModal(true);
+    setSubscribeModalContent({AuthorId, AuthorName, PostId, PostTitle, PostTags});
+  };
+  
+  const PremiumContent = (PostPrice, AuthorId, AuthorName, PostId, PostTitle, PostTags) => {
+    const userData = GetCookie('data');
+    if (!userData) {
+      showAlert(setAlert, setAlertVisible, 'error', 'Please login first!');
+      return;
+    }
+    setPremiumModal(true);
+    setPremiumModalContent({PostPrice, AuthorId, AuthorName, PostId, PostTitle, PostTags});
+  };
+
   return (
     <>
       <AlertComponent alert={alert} setAlert={setAlert} alertVisible={alertVisible} />
-      <main className={HomeStyle.HomeContent}>
-      {LoggedIn ? (
-        <>
-        <section className={HomeStyle.Hero}>
-          <h1>Welcome to EduHub!</h1>
-          <p>
-            Your go-to platform for sharing and discovering educational
-            resources.
-          </p>
-        </section>
-        </>
-      ) : null}
 
+      <main className={HomeStyle.HomeContent}>
+        {LoggedIn ? (
+          <>
+          <section className={HomeStyle.Hero}>
+            <h1>Welcome to EduHub!</h1>
+            <p>
+              Your go-to platform for sharing and discovering educational
+              resources.
+            </p>
+          </section>
+          </>
+        ) : null}
 
         <section className={PostModel.Posts}>
           {posts.length === 0 ? (
@@ -267,7 +283,7 @@ const Home = () => {
                     case 1:
                       return (
                         <>
-                          {post.isSubscribed || (post.userId == userId) ? (
+                          {post.subscribers.includes(userId) || (post.userId == userId) ? (
                             <>
                               <div className={PostModel.Post}>
                                 <div className={PostModel.PostActions}>  
@@ -295,7 +311,7 @@ const Home = () => {
                           ) : (
                             <div className={PostModel.LockedContainer}>
                               <p>This content is locked. Please subscribe to access.</p>
-                              <button className={PostModel.PostActionsButton} onClick={() => SubscribeContent(post.contentType, post.userId, post.username, post.id, post.title, post.tags)}>Subscribe</button>
+                              <button className={PostModel.PostActionsButton} onClick={() => SubscribeContent(post.userId, post.username, post.id, post.title, post.tags)}>Subscribe</button>
                             </div>
                           )}
                           <div className={PostModel.PostActions}>
@@ -341,7 +357,7 @@ const Home = () => {
                             <div className={PostModel.LockedContainer}>
                               <p>This content is locked. Please purchase to access.</p>
                               <p className={PostModel.PostPrice}>${post.price.toFixed(2)}</p>
-                              <button className={PostModel.PostActionsButton} onClick={() => PremiumContent(post.price.toFixed(2), post.contentType, post.userId, post.username, post.id, post.title, post.tags)}>Buy Now</button>
+                              <button className={PostModel.PostActionsButton} onClick={() => PremiumContent(post.price.toFixed(2), post.userId, post.username, post.id, post.title, post.tags)}>Buy Now</button>
                             </div>
                           )}
                           <div className={PostModel.PostActions}>
@@ -398,39 +414,59 @@ const Home = () => {
           )}
         </section>
       </main>
-      <Modal show={isModalOpen} onClose={closeModal}>
-          <h2>{modalContent?.ModalTitle}</h2>
-          <div>
-            <p>{modalContent?.ModalContent}</p>
+      <Modal
+        title="Purchase Content"
+        open={PremiumModal}
+        onCancel={() => setPremiumModal(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setPremiumModal(false)}>
+            Cancel
+          </Button>,
+          <Button key="submit" type="primary" onClick={() => handlePurchase(PremiumModalContent?.PostId, PremiumModalContent?.PostPrice)}>
+            Confirm
+          </Button>,
+        ]}
+      >
+        <div>
+          <div className={ModalStyle.Post}>
+            <p className={ModalStyle.ModalTitle}>{PremiumModalContent?.PostTitle}</p>
+            <div className={ModalStyle.ModalTitle}>
+              Posted by: 
+              <img src={ `http://localhost:5000/avatar/${PremiumModalContent?.AuthorId}`}  style={{margin: '0 0.25rem', width: '15px', height: '15px', borderRadius: '50%', overflow: 'hidden', display: 'inline-flex', justifyContent: 'center', alignItems: 'center'}} alt="User" />
+              <div className={ModalStyle.Bold}>{PremiumModalContent?.AuthorName}</div>
+            </div>
+          </div>
+        </div>
+
+        <div>Price: <strong>${PremiumModalContent?.PostPrice}</strong></div>
+        <p>Do you want to purchase this content from {PremiumModalContent?.AuthorName}?</p>
+      </Modal>
+      <Modal
+        title="Subscription"
+        open={SubscribeModal}
+        onCancel={() => setSubscribeModal(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setSubscribeModal(false)}>
+            Cancel
+          </Button>,
+          <Button key="submit" type="primary" onClick={() => handleSubscribe(SubscribeModalContent?.AuthorName)}>
+            Confirm
+          </Button>,
+        ]}
+      >
+        <div>
             <div className={ModalStyle.Post}>
-              <p className={ModalStyle.ModalTitle}>{modalContent?.PostTitle}</p>
+              <p className={ModalStyle.ModalTitle}>{SubscribeModalContent?.PostTitle}</p>
               <div className={ModalStyle.ModalAuthor}>
-                <p className={ModalStyle.ModalTitle}>
+                <div className={ModalStyle.ModalTitle}>
                   Posted by: 
-                  <img src={ `http://localhost:5000/avatar/${modalContent?.AuthorId}`}  style={{margin: '0 0.25rem', width: '15px', height: '15px', borderRadius: '50%', overflow: 'hidden', display: 'inline-flex', justifyContent: 'center', alignItems: 'center'}} alt="User" />
-                  <div className={ModalStyle.Bold}>{modalContent?.AuthorName}</div>
-                </p>
+                  <img src={ `http://localhost:5000/avatar/${SubscribeModalContent?.AuthorId}`}  style={{margin: '0 0.25rem', width: '15px', height: '15px', borderRadius: '50%', overflow: 'hidden', display: 'inline-flex', justifyContent: 'center', alignItems: 'center'}} alt="User" />
+                  <div className={ModalStyle.Bold}>{SubscribeModalContent?.AuthorName}</div>
+                </div>
               </div>
             </div>
           </div>
-          {(() => {
-            switch (modalContent?.ContentType) {
-              case 1:
-                return (
-                  <div className={ModalStyle.PostActions}>
-                    <button className={ModalStyle.ModalButton} onClick={() => handleSubscribe(modalContent?.AuthorName)}>Yes</button><button className={ModalStyle.ModalButton} onClick={closeModal}>No</button>
-                  </div>
-                );
-              case 2:
-                return(
-                  <div className={ModalStyle.PostActions}>
-                    <button className={ModalStyle.ModalButton} onClick={() => handlePurchase(modalContent?.PostId, modalContent?.PostPrice)}>Purchase</button><button className={ModalStyle.ModalButton} onClick={closeModal}>Cancel</button>
-                  </div>
-                );
-              default:
-                return null;
-            }
-          })()}
+        <p>Do you want to subscribe to {SubscribeModalContent?.AuthorName}?</p>
       </Modal>
     </>
   );

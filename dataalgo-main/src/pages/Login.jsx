@@ -1,16 +1,27 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Alert } from 'antd';
-import LoginStyle from "../assets/styles/login.module.css";
-import FormStyle from "../assets/styles/form.module.css";
+
+// Custom Components
 import { SetCookie } from '../components/auth/cookies.jsx';
 
+//Ant Design Components && Icons
+import { Alert } from 'antd';
+
+//CSS Components for styling
+import LoginStyle from "../assets/styles/login.module.css";
+import FormStyle from "../assets/styles/form.module.css";
+
 const Login = () => {
+  // System Variables
+  const navigate = useNavigate();
+
+  // User Input Variables
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+
+  // Custom alert variables
   const [alert, setAlert] = useState({ type: '', message: '' });
   const [alertVisible, setAlertVisible] = useState(false);
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,7 +38,8 @@ const Login = () => {
         const cookieData = {
           id: data.id,
           username: username,
-          token: data.token
+          token: data.token,
+          password: password
         };
         SetCookie('data', cookieData, { 
           expires: 7, 

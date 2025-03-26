@@ -1,7 +1,7 @@
 import Cookies from 'js-cookie';
 import CryptoJS from 'crypto-js';
 
-const secretKey = '3f9aa08a50de6e1749090b8228901626b434f518014778c83ab4830449c578e0'; // Replace with your actual secret key
+const secretKey = '3f9aa08a50de6e1749090b8228901626b434f518014778c83ab4830449c578e0'; // Secret key for encryption for cookies
 
 export const SetCookie = (name, data, options) => {
   const encryptedData = CryptoJS.AES.encrypt(JSON.stringify(data), secretKey).toString();
