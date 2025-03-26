@@ -297,8 +297,8 @@ const Settings = () => {
                     value={subscriptionInput}
                     onChange={(e) => {
                       const value = e.target.value;
-                      if (/^\d*\.?\d*$/.test(value)) {
-                        setsubscriptionInput(value === '' ? '0' : value);
+                      if (/^\d*\.?\d*$/.test(value) && value !== '0') {
+                        setsubscriptionInput(value === '' ? '1' : value);
                       }
                     }}
                   />
