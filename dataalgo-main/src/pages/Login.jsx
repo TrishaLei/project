@@ -10,6 +10,7 @@ import { Alert } from 'antd';
 //CSS Components for styling
 import LoginStyle from "../assets/styles/login.module.css";
 import FormStyle from "../assets/styles/form.module.css";
+const API_BASE_URL = import.meta.env.VITE_DOMAIN_API;
 
 const Login = () => {
   // System Variables
@@ -26,7 +27,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:5000/login', {
+      const response = await fetch(`${API_BASE_URL}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -46,7 +47,7 @@ const Login = () => {
           secure: true, 
           sameSite: 'Strict' 
         });
-        navigate('/');
+        navigate('/eduhub/');
       } else if(response.status === 401) {
         setAlert({ type: 'error', message: 'Invalid credentials. Please try again.' });
       }else{
@@ -112,11 +113,11 @@ const Login = () => {
             </button>
           </form>
           <p className={FormStyle.FormFooter}>
-            Don&apos;t have an account? <Link to="/signup">Sign up here</Link>.
+            Don&apos;t have an account? <Link to="/eduhub/signup">Sign up here</Link>.
           </p>
         </section>
         <footer className={LoginStyle.Footer}>
-            <p><Link to="/">EduHub</Link> &copy; 2024. All rights reserved.</p>
+            <p><Link to="/eduhub/">EduHub</Link> &copy; 2024. All rights reserved.</p>
         </footer>
       </main>
     </>

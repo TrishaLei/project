@@ -18,7 +18,7 @@ import ModalStyle from "../assets/styles/modal.module.css";
 //Custom alert Components
 import AlertComponent from '../components/Alert/AlertComponent.jsx';
 import { showAlert } from '../components/Alert/ShowAlert.js';
-
+const API_BASE_URL = import.meta.env.VITE_DOMAIN_API;
 
 const Home = () => {
   // System Variables
@@ -42,7 +42,7 @@ const Home = () => {
 
   //Fetch all Post Data
   useEffect(() => {
-    fetch('http://localhost:5000/posts')
+    fetch(`${API_BASE_URL}/posts`)
     .then(async response => {
       try {
         const data = await response.json();
@@ -72,7 +72,7 @@ const Home = () => {
         showAlert(setAlert, setAlertVisible, 'error', 'Please login first!');
         return;
       }
-      const response = await fetch(`http://localhost:5000/posts/${postId}/upvote`, {
+      const response = await fetch(`${API_BASE_URL}/posts/${postId}/upvote`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -96,7 +96,7 @@ const Home = () => {
         showAlert(setAlert, setAlertVisible, 'error', 'Please login first!');
         return;
       }
-      const response = await fetch(`http://localhost:5000/posts/${postId}/downvote`, {
+      const response = await fetch(`${API_BASE_URL}/posts/${postId}/downvote`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -115,7 +115,7 @@ const Home = () => {
 
   const handleSubscribe = async (AuthorName) => {
     try {
-      navigate('/profile/' + AuthorName);
+      navigate('/eduhub/profile/' + AuthorName);
     } catch (error) {
       console.error('Error downvoting post:', error);
     }
@@ -128,7 +128,7 @@ const Home = () => {
         showAlert(setAlert, setAlertVisible, 'error', 'Please login first!');
         return;
       }
-      const UserDataResponse = await fetch(`http://localhost:5000/user/${userData.username}`, {
+      const UserDataResponse = await fetch(`${API_BASE_URL}/user/${userData.username}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -141,7 +141,7 @@ const Home = () => {
           showAlert(setAlert, setAlertVisible, 'error', 'Insufficient balance!');
           return;
         }
-        const PurchaseResponse = await fetch(`http://localhost:5000/purchase/${PostID}/`, {
+        const PurchaseResponse = await fetch(`${API_BASE_URL}/purchase/${PostID}/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -170,7 +170,7 @@ const Home = () => {
         showAlert(setAlert, setAlertVisible, 'error', 'Please login first!');
         return;
       }
-      const response = await fetch(`http://localhost:5000/posts/download`, {
+      const response = await fetch(`${API_BASE_URL}/posts/download`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -273,8 +273,8 @@ const Home = () => {
                 <p className={PostModel.PostTags}>Tags: {post.tags}</p>
                 <p className={PostModel.PostAuthor}>
                   Posted by
-                  <img src={ `http://localhost:5000/avatar/${post.userId}`}  className={PostModel.PostAuthorIcon}alt="User" />
-                  <Link to={`/profile/${post.username}`} className={PostModel.PostAuthorName}>
+                  <img src={ `${API_BASE_URL}/avatar/${post.userId}`}  className={PostModel.PostAuthorIcon}alt="User" />
+                  <Link to={`/eduhub/profile/${post.username}`} className={PostModel.PostAuthorName}>
                     <span>{post.username}</span>
                   </Link>
                 </p>
@@ -432,7 +432,7 @@ const Home = () => {
             <p className={ModalStyle.ModalTitle}>{PremiumModalContent?.PostTitle}</p>
             <div className={ModalStyle.ModalTitle}>
               Posted by: 
-              <img src={ `http://localhost:5000/avatar/${PremiumModalContent?.AuthorId}`}  style={{margin: '0 0.25rem', width: '15px', height: '15px', borderRadius: '50%', overflow: 'hidden', display: 'inline-flex', justifyContent: 'center', alignItems: 'center'}} alt="User" />
+              <img src={ `${API_BASE_URL}/avatar/${PremiumModalContent?.AuthorId}`}  style={{margin: '0 0.25rem', width: '15px', height: '15px', borderRadius: '50%', overflow: 'hidden', display: 'inline-flex', justifyContent: 'center', alignItems: 'center'}} alt="User" />
               <div className={ModalStyle.Bold}>{PremiumModalContent?.AuthorName}</div>
             </div>
           </div>
@@ -460,7 +460,7 @@ const Home = () => {
               <div className={ModalStyle.ModalAuthor}>
                 <div className={ModalStyle.ModalTitle}>
                   Posted by: 
-                  <img src={ `http://localhost:5000/avatar/${SubscribeModalContent?.AuthorId}`}  style={{margin: '0 0.25rem', width: '15px', height: '15px', borderRadius: '50%', overflow: 'hidden', display: 'inline-flex', justifyContent: 'center', alignItems: 'center'}} alt="User" />
+                  <img src={ `${API_BASE_URL}/avatar/${SubscribeModalContent?.AuthorId}`}  style={{margin: '0 0.25rem', width: '15px', height: '15px', borderRadius: '50%', overflow: 'hidden', display: 'inline-flex', justifyContent: 'center', alignItems: 'center'}} alt="User" />
                   <div className={ModalStyle.Bold}>{SubscribeModalContent?.AuthorName}</div>
                 </div>
               </div>

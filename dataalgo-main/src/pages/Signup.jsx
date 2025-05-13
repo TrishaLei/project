@@ -10,6 +10,7 @@ import { Alert } from 'antd';
 //CSS Components for styling
 import SignupStyle from "../assets/styles/signup.module.css"; //Signup.jsx Main CSS
 import FormStyle from "../assets/styles/form.module.css";
+const API_BASE_URL = import.meta.env.VITE_DOMAIN_API;
 
 const Signup = () => {
   //System Variables && Parameters from URL
@@ -40,7 +41,7 @@ const Signup = () => {
     const JoinDate = new Date().toISOString();
 
     try {
-      const response = await fetch('http://localhost:5000/signup', {
+      const response = await fetch(`${API_BASE_URL}/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -61,7 +62,7 @@ const Signup = () => {
           secure: true, 
           sameSite: 'Strict' 
         });
-        navigate('/');
+        navigate('/eduhub/');
       } else {
         const errorData = await response.json();
         setAlert({ type: 'error', message: errorData.message || 'Signup failed. Please try again.' });
@@ -154,7 +155,7 @@ const Signup = () => {
           </p>
         </section>
         <footer className={SignupStyle.Footer}>
-            <p><Link to="/">EduHub</Link> &copy; 2024. All rights reserved.</p>
+            <p><Link to="/eduhub/">EduHub</Link> &copy; 2024. All rights reserved.</p>
         </footer>
       </main>
     </>

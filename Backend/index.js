@@ -10,7 +10,11 @@ const app = express();
 const port = 5000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['https://projects.joshlei.com'], 
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(bodyParser.json());
 require('dotenv').config();
 
@@ -28,10 +32,10 @@ const upload = multer({ storage });
 
 // MySQL connection
 const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'discord',
+  host: 's1319.sgp1.mysecurecloudhost.com',
+  user: 'joshleic_projects',
   password: 'omgdropaeye',
-  database: 'EduHub'
+  database: 'joshleic_eduhub'
 });
 
 db.connect(err => {
@@ -91,9 +95,11 @@ const authenticate = (req, res, next) => {
     res.status(400).json({ message: 'Invalid token.', token: token });
   }
 };
-
+app.get('/', (req, res) => {
+  return res.send('Hello World!');
+});
 //Topup APIs
-app.post('/user/paypal', async (req, res) => {
+app.post('/v1/eduhub/user/paypal', async (req, res) => {
   const { transactionId, amount, payerId } = req.body;
   try {
     const transaction = await verifyTransaction(transactionId);
@@ -123,7 +129,7 @@ app.post('/user/paypal', async (req, res) => {
 });
 
 // Login/Signup APIs
-app.post('/login', (req, res) => {
+app.post('/v1/eduhub/login', (req, res) => {
   const { username, password } = req.body;
   const query = 'SELECT id FROM users WHERE username = ? AND password = ?';
   db.query(query, [username, password], (err, selectResult) => {
@@ -139,7 +145,7 @@ app.post('/login', (req, res) => {
           if (err) {
             return res.status(500).send(`Server error: ${err}`);
           }
-          return res.status(200).json({ message: 'Login successfuls', id: userId, token:token});
+          return res.status(200).json({ message: 'Login successful', id: userId, token:token});
         });
     } else {
       res.status(511).send('Invalid credentials');
@@ -147,7 +153,7 @@ app.post('/login', (req, res) => {
   });
 });
 
-app.post('/signup', (req, res) => {
+app.post('/v1/eduhub/signup', (req, res) => {
   const { username, email, password, JoinDate } = req.body;
   db.query('SELECT username FROM users WHERE username = ? OR email = ?', [username, email], (err, SelectResult) => {
     if (err) {
@@ -158,21 +164,30 @@ app.post('/signup', (req, res) => {
     if (SelectResult.length > 0) {
       return res.status(400).json({ message: 'Username or email already exists' });
     }
-    const token = jwt.sign({ userId, username }, process.env.ACCESS_TOKEN, { expiresIn: '7d' });
-    const insertUserQuery = 'INSERT INTO users (token, username, email, password, JoinDate) VALUES (?, ?, ?, ?, ?)';
-    db.query(insertUserQuery, [token, username, email, password, JoinDate], (err, InsertResult) => {
-      if (err) {
-        console.error('Error:', err);
-        return res.status(500).json({ message: 'Server error. Please try again later.', error: err });
+    const insertUserQuery = 'INSERT INTO users (username, email, password, JoinDate) VALUES ( ?, ?, ?, ?)';
+    db.query(insertUserQuery, [username, email, password, JoinDate], (inserterr, InsertResult) => {
+      if (inserterr) {
+        console.error('Error:', inserterr);
+        return res.status(500).json({ message: 'Server error. Please try again later.', error: inserterr });
       }
+
       const userId = InsertResult.insertId;
-      res.status(200).json({ message: 'Signup successful!', id: userId, token: token });
+      const token = jwt.sign({ userId, username }, process.env.ACCESS_TOKEN, { expiresIn: '7d' });
+      
+      const updateUserQuery = 'UPDATE users SET token = ? WHERE id = ?';
+      db.query(updateUserQuery, [token, userId], (updateerr) => {
+        if (updateerr) {
+          console.error('Error:', updateerr);
+          return res.status(500).json({ message: 'Server error. Please try again later.', error: updateerr });
+        }
+        res.status(200).json({ message: 'Signup successful!', id: userId, token: token });
+      });
     });
   });
 });
 
 // User Related APIs
-app.get('/avatar/:id', (req, res) => {
+app.get('/v1/eduhub/avatar/:id', (req, res) => {
   const { id } = req.params;
   const filePath = __dirname + `/public/avatar/${id}.png`;
 
@@ -189,7 +204,7 @@ app.get('/avatar/:id', (req, res) => {
   });
 });
 
-app.get('/user/:username', (req, res) => {
+app.get('/v1/eduhub/user/:username', (req, res) => {
   const { username } = req.params;
   db.query(UserSelect, [username], (err, results) => {
     if (err) {
@@ -208,7 +223,7 @@ app.get('/user/:username', (req, res) => {
   });
 });
 
-app.get('/purchased/:userid', (req, res) => {
+app.get('/v1/eduhub/purchased/:userid', (req, res) => {
   const { userid } = req.params;
   db.query(Select_Post_Purchase_History, userid, (err, results) => {
     if (err) {
@@ -225,7 +240,7 @@ app.get('/purchased/:userid', (req, res) => {
   });
 });
 
-app.get('/subscriptions/:userid', (req, res) => {
+app.get('/v1/eduhub/subscriptions/:userid', (req, res) => {
   const { userid } = req.params;
   const query = 'SELECT id, username, subscribers, followers, JoinDate FROM users WHERE JSON_CONTAINS(subscribers, ?)' ;
   db.query(query, userid, (err, results) => {
@@ -237,7 +252,7 @@ app.get('/subscriptions/:userid', (req, res) => {
   });
 });
 
-app.post('/update/information/:userid', authenticate, (req, res) => {
+app.post('/v1/eduhub/update/information/:userid', authenticate, (req, res) => {
   const { userid } = req.params;
   const { username, email, password, subprice } = req.body;
   const CheckCredentials = 'SELECT username FROM users WHERE id = ? AND password = ?';
@@ -297,7 +312,7 @@ app.post('/update/information/:userid', authenticate, (req, res) => {
     }
   });
 });
-app.post('/user/follow/', authenticate, (req, res) => {
+app.post('/v1/eduhub/user/follow/', authenticate, (req, res) => {
   const { Authorname, userid } = req.body;
   db.query('SELECT followers, id FROM users WHERE username = ?', [Authorname], (err, AuthorResults) => {
     if (err) {
@@ -367,7 +382,7 @@ app.post('/user/follow/', authenticate, (req, res) => {
   });
 });
 
-app.post('/user/subscribe/', authenticate, (req, res) => {
+app.post('/v1/eduhub/user/subscribe/', authenticate, (req, res) => {
   const { Authorname, userid } = req.body;
   db.query('SELECT subscribers, subscriptionprice, id FROM users WHERE username = ?', [Authorname], (err, AuthorResults) => {
     if (err || AuthorResults.length === 0) {
@@ -444,7 +459,7 @@ app.post('/user/subscribe/', authenticate, (req, res) => {
 });
 
 // Post Related APIs
-app.get('/posts', (req, res) => {
+app.get('/v1/eduhub/posts', (req, res) => {
   db.query(Show_All_Post, (err, results) => {
     if (err) {
       console.error('Error:', err);
@@ -460,7 +475,7 @@ app.get('/posts', (req, res) => {
   });
 });
 
-app.post('/publish', upload.array('attachments'), (req, res) => {
+app.post('/v1/eduhub/publish', upload.array('attachments'), (req, res) => {
   const { usertoken, username, title, tags, description, contentType, price, hasAttachments, PostDate } = req.body;
   const attachments = req.files ? req.files.map(file => file.filename) : [];
   db.query('SELECT id FROM users WHERE token = ? AND username = ?', [usertoken, username], (err, results) => {
@@ -484,7 +499,7 @@ app.post('/publish', upload.array('attachments'), (req, res) => {
   });
 });
 
-app.post('/posts/download', authenticate, (req, res) => {
+app.post('/v1/eduhub/posts/download', authenticate, (req, res) => {
   const { PostId, userId, Filename } = req.body;
   db.query('SELECT purchase, userid, price FROM posts WHERE id = ?', [PostId], (err, results) => {
     if (err) {
@@ -510,7 +525,7 @@ app.post('/posts/download', authenticate, (req, res) => {
   });
 });
 
-app.get('/post/:id', (req, res) => {
+app.get('/v1/eduhub/post/:id', (req, res) => {
   const postId = parseInt(req.params.id);
   db.query(Select_Post, [postId], (err, results) => {
     if (err) {
@@ -531,7 +546,7 @@ app.get('/post/:id', (req, res) => {
   });
 });
 
-app.get('/user/:id/posts', (req, res) => {
+app.get('/v1/eduhub/user/:id/posts', (req, res) => {
   const postId = parseInt(req.params.id);
   db.query(SelectUser_Post, [postId],(err, results) => {
     if (err) {
@@ -546,7 +561,7 @@ app.get('/user/:id/posts', (req, res) => {
   });
 });
 
-app.post('/posts/:id/upvote', authenticate, (req, res) => {
+app.post('/v1/eduhub/posts/:id/upvote', authenticate, (req, res) => {
   const postId = parseInt(req.params.id);
   const { userId } = req.body;
 
@@ -614,7 +629,7 @@ app.post('/posts/:id/upvote', authenticate, (req, res) => {
   });
 });
 
-app.post('/posts/:id/downvote', authenticate, (req, res) => {
+app.post('/v1/eduhub/posts/:id/downvote', authenticate, (req, res) => {
   const postId = parseInt(req.params.id);
   const { userId } = req.body;
 
@@ -682,7 +697,7 @@ app.post('/posts/:id/downvote', authenticate, (req, res) => {
   });
 });
 
-app.post('/purchase/:postid', authenticate, (req, res) => {
+app.post('/v1/eduhub/purchase/:postid', authenticate, (req, res) => {
   const { postid } = req.params;
   const { username } = req.body;
   const CheckUser = 'SELECT id, balance FROM users WHERE username = ?';

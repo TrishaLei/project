@@ -3,13 +3,14 @@ import React, { useState } from 'react';
 // PayPal Components
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import PaypalStyle from './paypal.module.css';
+const API_BASE_URL = import.meta.env.VITE_DOMAIN_API;
 
 const Paypal = ({ onClose, UserId }) => {
   const [amount, setAmount] = useState(10); // Default amount to $10
 
   const handleSuccess = async (details) => {
     try {
-      const response = await fetch('http://localhost:5000/user/paypal', {
+      const response = await fetch(`${API_BASE_URL}/user/paypal`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

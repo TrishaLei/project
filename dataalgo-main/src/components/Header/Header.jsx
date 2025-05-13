@@ -10,6 +10,7 @@ import { UserOutlined, SettingOutlined, DollarOutlined, LogoutOutlined } from '@
 //CSS Components for styling
 import HeaderStyle from './header.module.css'; // Header.jsx Main CSS
 import Paypal from '../TopUp/Paypal.jsx';
+const API_BASE_URL = import.meta.env.VITE_DOMAIN_API;
 
 const Header = () => {
   const [isScrollingDown, setIsScrollingDown] = useState(false);
@@ -29,7 +30,7 @@ const Header = () => {
     RemoveCookie('data');
     const URL = location.pathname;
     switch (true) {
-      case URL.startsWith("/settings"):
+      case URL.startsWith("/eduhub/settings"):
         return window.location.href = '/';
       default:
         return window.location.reload();
@@ -60,7 +61,7 @@ const Header = () => {
   }, [lastScrollY]);
 
   const fetchUserData = () => {
-    fetch(`http://localhost:5000/user/${username}`, {
+    fetch(`${API_BASE_URL}/user/${username}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -95,8 +96,8 @@ const Header = () => {
   }, [username]);
 
   const DropdownItems = [
-    { label: 'Profile', link: `/profile/${username}`, icon: <UserOutlined /> },
-    { label: 'Settings', link: '/settings', icon: <SettingOutlined /> },
+    { label: 'Profile', link: `/eduhub/profile/${username}`, icon: <UserOutlined /> },
+    { label: 'Settings', link: '/eduhub/settings', icon: <SettingOutlined /> },
     { label: `$${userDataServer && userDataServer.balance ? (Math.floor(userDataServer.balance * 100) / 100).toFixed(2) : '0.00'}`, link: '#', icon: <DollarOutlined />, onClick: togglePayPalPopup },
     { label: 'Logout', onClick: handleLogout, icon: <LogoutOutlined /> }
   ];
@@ -104,17 +105,17 @@ const Header = () => {
   const HeaderButtons = () => {
     const URL = location.pathname;
     switch (true) {
-      case URL === "/":
-        return <Link to="/publish" className={HeaderStyle.Btn}>Publish</Link>;
-      case URL.startsWith("/profile/"):
+      case URL === "/eduhub/":
+        return <Link to="/eduhub/publish" className={HeaderStyle.Btn}>Publish</Link>;
+      case URL.startsWith("/eduhub/profile/"):
         return (
           <>
-            <Link to="/" className={HeaderStyle.Btn}>Home</Link>
-            <Link to="/publish" className={HeaderStyle.Btn}>Publish</Link>
+            <Link to="/eduhub/" className={HeaderStyle.Btn}>Home</Link>
+            <Link to="/eduhub/publish" className={HeaderStyle.Btn}>Publish</Link>
           </>
         );
       default:
-        return <Link to="/" className={HeaderStyle.Btn}>Home</Link>;
+        return <Link to="/eduhub/" className={HeaderStyle.Btn}>Home</Link>;
     }
   };
 
@@ -122,7 +123,7 @@ const Header = () => {
     <>
       <div className={HeaderStyle.Spacer}></div>
       <header className={`${HeaderStyle.Header} ${isScrollingDown ? HeaderStyle.HeaderHidden : ""}`}>
-        <Link to="/" className={HeaderStyle.Logo}>EduHub</Link>
+        <Link to="/eduhub/" className={HeaderStyle.Logo}>EduHub</Link>
         <label htmlFor="nav-toggle" className={HeaderStyle.NavToggleLabel}>
           <span></span>
           <span></span>
@@ -133,7 +134,7 @@ const Header = () => {
 
          {!userData ? (
             <>
-              <Link to="/login" className={HeaderStyle.Btn}>
+              <Link to="/eduhub/login" className={HeaderStyle.Btn}>
                 Login
               </Link>
             </>
@@ -142,7 +143,7 @@ const Header = () => {
             <div className={HeaderStyle.AvatarContainer}>
               <div className={HeaderStyle.dropdown}>
                 <img
-                  src={`http://localhost:5000/avatar/${userid}`}
+                  src={`${API_BASE_URL}/avatar/${userid}`}
                   alt="User Avatar"
                   className={HeaderStyle.avatar}
                   onClick={toggleDropdown}

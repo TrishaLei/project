@@ -16,13 +16,13 @@ const Routed = () => {
   const location = useLocation();
   return (
     <Routes location={location} key={location.pathname}>
-      <Route path="/" element={<><Header /><Home /><Footer/></>} />
-      <Route path="/login" element={<><Login /></>} />
-      <Route path="/signup" element={<Signup />} />
-      <Route path="/publish" element={<><Header /><Publish /></>} />
-      <Route path="/settings" element={<><Header /><Settings /></>} />
-      <Route path="/profile/:username" element={<><Header /><Profile /><Footer/></>} />
-      <Route path="/post/:postid" element={<><Header /><Post /></>} />
+      <Route path="/eduhub/" element={<><Header /><Home /><Footer/></>} />
+      <Route path="/eduhub/login" element={<><Login /></>} />
+      <Route path="/eduhub/signup" element={<Signup />} />
+      <Route path="/eduhub/publish" element={<><Header /><Publish /></>} />
+      <Route path="/eduhub/settings" element={<><Header /><Settings /></>} />
+      <Route path="/eduhub/profile/:username" element={<><Header /><Profile /><Footer/></>} />
+      <Route path="/eduhub/post/:postid" element={<><Header /><Post /></>} />
     </Routes>
   );
 };

@@ -11,6 +11,7 @@ import FormStyle from "../assets/styles/form.module.css";
 //Custom alert Components
 import AlertComponent from '../components/Alert/AlertComponent.jsx';
 import { showAlert } from '../components/Alert/ShowAlert.js';
+const API_BASE_URL = import.meta.env.VITE_DOMAIN_API;
 
 const Publish = () => {
   //System Variables
@@ -37,7 +38,7 @@ const Publish = () => {
   useEffect(() => {
     const userData = GetCookie('data');
     if (!userData) {
-      navigate('/');
+      navigate('/eduhub/');
     }
   }, [navigate]);
 
@@ -66,7 +67,7 @@ const Publish = () => {
     e.preventDefault();
     const userData = GetCookie('data');
     if (!userData) {
-      navigate('/');
+      navigate('/eduhub/');
       return;
     }
     const username = userData.username;
@@ -91,7 +92,7 @@ const Publish = () => {
         }
       }
 
-      const response = await fetch('http://localhost:5000/publish', {
+      const response = await fetch(`${API_BASE_URL}/publish`, {
         method: 'POST',
         headers: {
           'Authorization': `${usertoken}`
@@ -102,7 +103,7 @@ const Publish = () => {
       if (response.ok) {
         showAlert(setAlert, setAlertVisible, 'success', 'Successfuly published!');
         setTimeout(() => {
-          navigate('/');
+          navigate('/eduhub/');
         }, 1000);
       } else if(response.status === 401) {
         showAlert(setAlert, setAlertVisible, 'error', 'Invalid Post. Please try again.');
@@ -112,7 +113,7 @@ const Publish = () => {
         RemoveCookie('data');
         setTimeout(() => {
           setAlertVisible(false);
-          navigate('/login');
+          navigate('/eduhub/login');
         }, 5000);
       }else{
         console.log(response);
@@ -219,7 +220,7 @@ const Publish = () => {
           </form>
         </section>
         <footer className={PublishStyle.Footer}>
-            <p><Link to="/">EduHub</Link> &copy; 2024. All rights reserved.</p>
+            <p><Link to="/eduhub/">EduHub</Link> &copy; 2024. All rights reserved.</p>
         </footer>
       </main>
     </>
